@@ -4,8 +4,15 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
 from app.main import app
-from app.database.database import Base
+from app.models.base import Base
+import app.models as _models
 from app.dependencies.db import get_db
+from sqlalchemy.types import BigInteger
+from sqlalchemy.ext.compiler import compiles
+
+@compiles(BigInteger, "sqlite")
+def compile_big_int_sqlite(type_, compiler, **kw):
+    return "INTEGER"
 
 # Use aiosqlite for asynchronous SQLite connections in tests
 SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"

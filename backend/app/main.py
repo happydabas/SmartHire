@@ -81,7 +81,20 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Intercept request validation parameters errors."""
-    logger.warning(f"Validation failure at {request.url.path}: {exc.errors()}")
+    errors = exc.errors()
+    logger.warning(f"Validation failure at {request.url.path}: {errors}")
+    
+    # Sanitize errors to make sure they are JSON serializable
+    sanitized_errors = []
+    for err in errors:
+        new_err = dict(err)
+        if "ctx" in new_err and isinstance(new_err["ctx"], dict):
+            new_err["ctx"] = {
+                k: str(v) if isinstance(v, Exception) else v 
+                for k, v in new_err["ctx"].items()
+            }
+        sanitized_errors.append(new_err)
+        
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
@@ -89,7 +102,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "error": {
                 "code": status.HTTP_422_UNPROCESSABLE_ENTITY,
                 "message": "Inbound request validation failed.",
-                "details": exc.errors()
+                "details": sanitized_errors
             }
         }
     )

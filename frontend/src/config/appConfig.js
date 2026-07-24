@@ -1,0 +1,7 @@
+export const appConfig = {
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1',
+  appName: import.meta.env.VITE_APP_NAME || 'SmartHire',
+  appVersion: import.meta.env.VITE_APP_VERSION || '1.0.0',
+};
+
+export default appConfig;
