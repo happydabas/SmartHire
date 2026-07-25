@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import AvatarUploader from '@/components/ui/AvatarUploader';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
 
 // Simple Phone validation helper
 const PHONE_REGEX = /^\+?[0-9\s\-]{7,20}$/;
@@ -126,12 +127,7 @@ export function RecruiterProfile() {
   };
 
   if (initLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading recruiter profile...</p>
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   return (
@@ -235,14 +231,14 @@ export function RecruiterProfile() {
               </div>
 
               {/* Save Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end w-full sm:w-auto">
                 <Button
                   type="submit"
                   variant="primary"
                   size="md"
                   disabled={saveLoading || uploadLoading}
                   isLoading={saveLoading}
-                  className="rounded-xl font-bold flex items-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
+                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
                 >
                   <FileCheck className="w-4 h-4" />
                   <span>Save Changes</span>

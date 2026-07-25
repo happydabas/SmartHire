@@ -26,7 +26,7 @@ export const Modal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 animate-fadeIn">
       {/* Backdrop overlay */}
       <div 
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
@@ -36,7 +36,7 @@ export const Modal = ({
       {/* Modal box */}
       <div 
         className={twMerge(
-          'relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 transform transition-all animate-in fade-in zoom-in-95 duration-200 z-10',
+          'relative w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] overflow-y-auto bg-white border border-slate-200 rounded-t-3xl sm:rounded-3xl shadow-2xl p-6 md:p-8 space-y-6 transform transition-all z-10 animate-in slide-in-from-bottom sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200',
           className
         )}
         {...props}

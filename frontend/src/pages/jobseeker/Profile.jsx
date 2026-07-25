@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { profileService } from '@/services/profile/profileService';
 import { validators } from '@/utils/validators';
+import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
@@ -24,6 +25,7 @@ import Button from '@/components/ui/Button';
 import Avatar from '@/components/ui/Avatar';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
 
 export function ProfilePage() {
   const { user } = useAuth();
@@ -270,19 +272,20 @@ export function ProfilePage() {
       setSuccess("Profile updated successfully!");
     } catch (err) {
       console.error("Save profile error:", err);
-      setError("Failed to save profile changes. Please verify input formats and try again.");
+      const errorsMap = parseFormErrors(err);
+      if (errorsMap) {
+        setFieldErrors(errorsMap);
+        setError("Please correct the validation errors in the form.");
+      } else {
+        setError(extractErrorMessage(err) || "Failed to save profile changes. Please verify input formats and try again.");
+      }
     } finally {
       setSaving(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading profile settings...</p>
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   return (
@@ -329,7 +332,8 @@ export function ProfilePage() {
               <button
                 type="button"
                 onClick={handleTriggerFileInput}
-                className="absolute bottom-1 right-1 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all transform hover:scale-110"
+                disabled={saving}
+                className="absolute bottom-1 right-1 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-all transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Upload Photo"
               >
                 <Camera className="w-4 h-4" />
@@ -351,6 +355,7 @@ export function ProfilePage() {
                 onChange={handleInputChange}
                 error={fieldErrors.full_name}
                 placeholder="Enter full name"
+                disabled={saving}
                 required
               />
 
@@ -371,6 +376,7 @@ export function ProfilePage() {
                 onChange={handleInputChange}
                 error={fieldErrors.phone_number}
                 placeholder="+1 234 567 8900"
+                disabled={saving}
                 required
               />
 
@@ -382,6 +388,7 @@ export function ProfilePage() {
                   value={profileData.date_of_birth}
                   onChange={handleInputChange}
                   error={fieldErrors.date_of_birth}
+                  disabled={saving}
                   required
                 />
 
@@ -393,7 +400,8 @@ export function ProfilePage() {
                     id="gender"
                     value={profileData.gender}
                     onChange={handleInputChange}
-                    className={`block w-full rounded-2xl border ${fieldErrors.gender ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-blue-500'} bg-white px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all`}
+                    disabled={saving}
+                    className={`block w-full rounded-2xl border ${fieldErrors.gender ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:border-blue-500'} bg-white px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all disabled:bg-slate-50 disabled:text-slate-400`}
                   >
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
@@ -426,6 +434,7 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.country}
               placeholder="e.g. United States"
+              disabled={saving}
               required
             />
             <Input
@@ -435,6 +444,7 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.state}
               placeholder="e.g. California"
+              disabled={saving}
               required
             />
             <Input
@@ -444,6 +454,7 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.city}
               placeholder="e.g. San Francisco"
+              disabled={saving}
               required
             />
           </div>
@@ -455,6 +466,7 @@ export function ProfilePage() {
             onChange={handleInputChange}
             error={fieldErrors.address}
             placeholder="e.g. 123 Main St, Apt 4"
+            disabled={saving}
             required
           />
         </Card>
@@ -471,6 +483,7 @@ export function ProfilePage() {
             value={profileData.headline}
             onChange={handleInputChange}
             placeholder="e.g. Senior Frontend Engineer | React & Next.js Specialist"
+            disabled={saving}
           />
 
           <Textarea
@@ -480,6 +493,7 @@ export function ProfilePage() {
             onChange={handleInputChange}
             placeholder="Write a brief professional summary about yourself, your career highlights, and major achievements..."
             rows={5}
+            disabled={saving}
           />
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
@@ -490,6 +504,7 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.linkedin_url}
               placeholder="https://linkedin.com/in/username"
+              disabled={saving}
             />
             <Input
               label="GitHub Profile URL"
@@ -498,6 +513,7 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.github_url}
               placeholder="https://github.com/username"
+              disabled={saving}
             />
             <Input
               label="Portfolio URL"
@@ -506,17 +522,18 @@ export function ProfilePage() {
               onChange={handleInputChange}
               error={fieldErrors.portfolio_url}
               placeholder="https://username.dev"
+              disabled={saving}
             />
           </div>
         </Card>
 
         {/* Action Button */}
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 w-full sm:w-auto">
           <Button
             type="submit"
             isLoading={saving}
             disabled={saving}
-            className="px-8 py-3 rounded-2xl shadow-lg flex items-center gap-2"
+            className="w-full sm:w-auto px-8 py-3 rounded-2xl shadow-lg flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" /> Save Profile Settings
           </Button>

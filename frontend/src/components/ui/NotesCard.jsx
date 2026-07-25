@@ -96,19 +96,21 @@ export const NotesCard = ({
                       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                         <button
                           type="button"
+                          disabled={isLoading}
                           onClick={() => handleStartEdit(note)}
-                          className="p-1 hover:bg-slate-100 hover:text-slate-700 rounded transition-colors"
+                          className="p-1 hover:bg-slate-100 hover:text-slate-700 rounded transition-colors disabled:opacity-50"
                           title="Edit Note"
                         >
-                          <Edit2 className="w-3 h-3" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
                         <button
                           type="button"
+                          disabled={isLoading}
                           onClick={() => onDelete?.(note.id)}
-                          className="p-1 hover:bg-red-50 hover:text-red-600 rounded transition-colors"
+                          className="p-1 hover:bg-red-50 hover:text-red-600 rounded transition-colors disabled:opacity-50"
                           title="Delete Note"
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
@@ -120,22 +122,25 @@ export const NotesCard = ({
                     <Textarea
                       value={editingContent}
                       onChange={(e) => setEditingContent(e.target.value)}
+                      disabled={isLoading}
                       rows={2}
                       className="text-xs py-2 px-3 rounded-xl border-blue-500"
                     />
                     <div className="flex justify-end gap-1.5">
                       <button
                         type="button"
+                        disabled={isLoading}
                         onClick={handleCancelEdit}
-                        className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-all"
+                        className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-all disabled:opacity-50"
                         title="Cancel"
                       >
                         <X className="w-4 h-4" />
                       </button>
                       <button
                         type="button"
+                        disabled={isLoading}
                         onClick={() => handleSaveEdit(note.id)}
-                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-all"
+                        className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-all disabled:opacity-50"
                         title="Save Changes"
                       >
                         <Check className="w-4 h-4" />

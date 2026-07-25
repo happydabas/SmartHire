@@ -28,6 +28,7 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import SkeletonCard from '@/components/common/SkeletonCard';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -196,9 +197,67 @@ export function Dashboard() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading dashboard workspace...</p>
+      <div className="space-y-6 max-w-7xl mx-auto animate-pulse select-none">
+        {/* Welcome Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="h-3 bg-slate-200 rounded-lg w-32"></div>
+            <div className="h-6 bg-slate-200 rounded-xl w-64"></div>
+          </div>
+          <div className="h-11 bg-slate-200 rounded-2xl w-40"></div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="p-5 space-y-3 border border-slate-100 bg-white">
+              <div className="flex items-center justify-between">
+                <div className="h-3 bg-slate-200 rounded-lg w-20"></div>
+                <div className="w-8 h-8 bg-slate-200 rounded-xl"></div>
+              </div>
+              <div className="h-7 bg-slate-200 rounded-xl w-12"></div>
+              <div className="h-3 bg-slate-200 rounded-lg w-16"></div>
+            </Card>
+          ))}
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Recommended Jobs Column */}
+          <div className="lg:col-span-2 space-y-5">
+            <div className="flex items-center justify-between">
+              <div className="h-5 bg-slate-200 rounded-lg w-40"></div>
+            </div>
+            {/* Filter card skeleton */}
+            <Card className="p-5 border border-slate-100 bg-white space-y-4">
+              <div className="h-10 bg-slate-200 rounded-xl w-full"></div>
+            </Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Applications Sidebar */}
+          <div className="space-y-5">
+            <div className="h-5 bg-slate-200 rounded-lg w-44"></div>
+            <Card className="p-5 border border-slate-100 bg-white space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className={`space-y-2.5 ${i > 0 ? 'border-t border-slate-100 pt-4' : ''}`}>
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="space-y-1.5 flex-grow">
+                      <div className="h-3.5 bg-slate-200 rounded-lg w-3/4"></div>
+                      <div className="h-3 bg-slate-200 rounded-lg w-1/2"></div>
+                    </div>
+                    <div className="h-5 bg-slate-200 rounded-lg w-16"></div>
+                  </div>
+                  <div className="h-3 bg-slate-200 rounded-lg w-1/3"></div>
+                </div>
+              ))}
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -241,7 +300,7 @@ export function Dashboard() {
 
 
       {/* ── Stats Grid ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="hover:scale-[1.02] transition-transform duration-200 p-5 space-y-3 shadow-sm border border-slate-100">
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500">Applications</span>

@@ -29,7 +29,9 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptyJobs from '@/components/common/EmptyJobs';
+import SkeletonCard from '@/components/common/SkeletonCard';
 
 // Predefined Options
 const EMPLOYMENT_TYPES = [
@@ -83,6 +85,7 @@ export function JobsPage() {
   // UI status states
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [savingJobId, setSavingJobId] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
@@ -270,6 +273,7 @@ export function JobsPage() {
 
     try {
       setActionLoading(true);
+      setSavingJobId(jobId);
       setError(null);
       setSuccess(null);
       await jobService.saveJob(jobId);
@@ -286,6 +290,7 @@ export function JobsPage() {
       setError("Failed to bookmark job posting.");
     } finally {
       setActionLoading(false);
+      setSavingJobId(null);
     }
   };
 
@@ -610,21 +615,40 @@ export function JobsPage() {
         {/* Main List & Pagination Column */}
         <div className="flex-grow w-full space-y-6">
           {loading ? (
-            <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-              <Spinner size="lg" />
-              <p className="text-sm font-medium text-slate-500 animate-pulse">Filtering jobs catalog...</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
             </div>
           ) : jobs.length === 0 ? (
-            <EmptyState
-              title="No Jobs Found"
-              description="No open job postings match your current filter parameters or search queries. Try resetting filters."
-              icon={<Briefcase className="w-12 h-12 text-slate-400" />}
-              action={
-                <Button variant="secondary" size="md" onClick={handleClearAll} className="rounded-xl font-bold">
-                  Reset Search & Filters
-                </Button>
-              }
-            />
+            currentFilters.search ? (
+              <EmptyState
+                title="No results found."
+                description={`No results matching "${currentFilters.search}" were found. Try modifying your search.`}
+                icon={Search}
+                primaryButton={{
+                  label: "Clear Search",
+                  onClick: () => setSearchVal('')
+                }}
+                className="bg-white border border-slate-100 shadow-sm w-full py-16"
+              />
+            ) : activeChips.length > 0 ? (
+              <EmptyState
+                title="No items match your filters."
+                description="We couldn't find any jobs matching your active filter criteria. Try resetting them."
+                icon={Search}
+                primaryButton={{
+                  label: "Reset Filters",
+                  onClick: handleClearAll
+                }}
+                className="bg-white border border-slate-100 shadow-sm w-full py-16"
+              />
+            ) : (
+              <EmptyJobs
+                onClearFilters={handleClearAll}
+                onBrowseAll={handleClearAll}
+              />
+            )
           ) : (
             <>
               {/* Jobs List Grid */}
@@ -641,7 +665,8 @@ export function JobsPage() {
                   return (
                     <Card 
                       key={job.id} 
-                      className="flex flex-col justify-between p-5 hover:shadow-2xl hover:border-slate-300 transition-all duration-200 border border-slate-100 bg-white"
+                      hoverable
+                      className="flex flex-col justify-between p-5 border border-slate-100 bg-white"
                     >
                       <div className="space-y-4">
                         {/* Logo, Title and Company */}
@@ -739,6 +764,7 @@ export function JobsPage() {
                             size="sm"
                             onClick={() => handleSaveJob(job.id, job.title)}
                             disabled={isSaved || actionLoading}
+                            isLoading={savingJobId === job.id}
                             className={`rounded-xl border border-slate-200 font-bold py-2 flex items-center justify-center gap-1 text-xs ${
                               isSaved ? 'text-slate-400 bg-slate-50 border-slate-100' : 'text-slate-600 hover:bg-slate-50'
                             }`}

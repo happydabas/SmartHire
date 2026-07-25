@@ -87,4 +87,15 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 5242880  # 5MB in bytes
     UPLOAD_DIR: str = "app/uploads"
 
+    # ==========================================
+    # 8. AI Foundation Settings
+    # ==========================================
+    AI_PROVIDER: str = "mock"
+    AI_API_KEY: str = "mock-key"
+    AI_MODEL: str = "mock-model"
+    AI_TEMPERATURE: float = 0.7
+    AI_MAX_TOKENS: int = 1000
+    AI_TIMEOUT: float = 30.0
+    AI_REQUESTS_PER_MINUTE: int = 60
+
 settings = Settings()

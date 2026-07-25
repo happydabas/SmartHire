@@ -17,6 +17,7 @@ import {
   Building
 } from 'lucide-react';
 import Avatar from '@/components/ui/Avatar';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export function RecruiterLayout() {
   const { user, logout } = useAuth();
@@ -109,6 +110,11 @@ export function RecruiterLayout() {
             <span className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-blue-500/20">S</span>
             <span className="font-black text-slate-800 tracking-tight text-lg">SmartHire <span className="text-blue-600 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md bg-blue-50 ml-1">Recruiter</span></span>
           </div>
+        </div>
+
+        {/* Right side bell integration */}
+        <div className="flex items-center gap-3">
+          <NotificationBell />
         </div>
       </header>
 
@@ -275,7 +281,9 @@ export function RecruiterLayout() {
         {/* 5. Main Content Wrapper — scrollable */}
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
           <main className="flex-grow p-4 sm:p-6 md:p-8">
-            <Outlet />
+            <div className="animate-fadeIn animate-slideUp">
+              <Outlet />
+            </div>
           </main>
 
           <footer className="bg-white border-t border-slate-100 py-6 text-center text-xs font-semibold text-slate-400 tracking-wide mt-auto select-none">

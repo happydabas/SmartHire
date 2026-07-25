@@ -15,8 +15,11 @@ import {
   FileCheck,
   ChevronRight,
   BookOpen,
-  FolderDot
+  FolderDot,
+  Sparkles
 } from 'lucide-react';
+import ApplicantMatchScore from '@/pages/recruiter/ApplicantMatchScore';
+import ApplicantSkillMatching from '@/pages/recruiter/ApplicantSkillMatching';
 import { useAuth } from '@/hooks/useAuth';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
@@ -25,14 +28,19 @@ import { formatDate } from '@/utils/formatDate';
 import ProfileCard from '@/components/ui/ProfileCard';
 import ResumeViewer from '@/components/ui/ResumeViewer';
 import Timeline from '@/components/ui/Timeline';
-import NotesCard from '@/components/ui/NotesCard';
-import StatusDropdown from '@/components/ui/StatusDropdown';
+import RecruiterNotes from '@/components/ats/RecruiterNotes';
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
+import StageBadge from '@/components/ats/StageBadge';
+import PipelineProgress from '@/components/ats/PipelineProgress';
+import StageSelector from '@/components/ats/StageSelector';
+import ApplicationTimeline from '@/components/ats/ApplicationTimeline';
+import { notificationService } from '@/services/notificationService';
 
 export function ApplicantDetails() {
   const { id } = useParams();
@@ -43,11 +51,9 @@ export function ApplicantDetails() {
   const [loading, setLoading] = useState(true);
   const [downloadLoading, setDownloadLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
-  const [notesLoading, setNotesLoading] = useState(false);
 
   // Data states
   const [application, setApplication] = useState(null);
-  const [notes, setNotes] = useState([]);
   const [error, setError] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
@@ -55,6 +61,8 @@ export function ApplicantDetails() {
   // Confirmation dialog states
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmStatusVal, setConfirmStatusVal] = useState('');
+  const [showMatchScore, setShowMatchScore] = useState(false);
+  const [showSkillMatching, setShowSkillMatching] = useState(false);
 
   // Fetch all details on mount / ID change
   const loadAllDetails = async () => {
@@ -64,10 +72,6 @@ export function ApplicantDetails() {
       // Fetch application details
       const appData = await applicationService.getApplicationDetails(id);
       setApplication(appData);
-
-      // Fetch recruiter notes
-      const notesData = await applicationService.getNotes(id);
-      setNotes(notesData);
     } catch (err) {
       console.error('Error fetching applicant details:', err);
       setError('Failed to fetch candidate record. Make sure the ID exists or you have permission.');
@@ -91,6 +95,25 @@ export function ApplicantDetails() {
     setConfirmOpen(true);
   };
 
+  const triggerStatusChangeNotifications = (newStage, appData) => {
+    if (!appData) return;
+    const stage = newStage?.toLowerCase();
+    
+    if (stage === 'screening') {
+      notificationService.notifyApplicationScreening(appData.id, appData.job, appData.candidate)
+        .catch(err => console.error('Failed to trigger screening notification:', err));
+    } else if (stage === 'interview') {
+      notificationService.notifyInterviewScheduled(appData.id, appData.job, appData.candidate)
+        .catch(err => console.error('Failed to trigger interview notification:', err));
+    } else if (stage === 'selected') {
+      notificationService.notifyApplicationSelected(appData.id, appData.job, appData.candidate)
+        .catch(err => console.error('Failed to trigger selected notification:', err));
+    } else if (stage === 'rejected') {
+      notificationService.notifyApplicationRejected(appData.id, appData.job, appData.candidate)
+        .catch(err => console.error('Failed to trigger rejected notification:', err));
+    }
+  };
+
   const confirmStatusUpdate = async () => {
     try {
       setStatusLoading(true);
@@ -99,6 +122,9 @@ export function ApplicantDetails() {
       
       triggerToast('Application status updated successfully!', 'success');
       
+      // Trigger status notifications dynamically
+      triggerStatusChangeNotifications(confirmStatusVal, application);
+
       // Reload details to reflect new status
       await loadAllDetails();
     } catch (err) {
@@ -109,51 +135,7 @@ export function ApplicantDetails() {
     }
   };
 
-  // 2. Notes Event Handlers
-  const handleAddNote = async (content) => {
-    try {
-      setNotesLoading(true);
-      const recruiterName = user?.name || 'Recruiter';
-      const recruiterId = user?.id || 999;
-      
-      const newNote = await applicationService.addNote(id, content, recruiterName, recruiterId);
-      setNotes(prev => [newNote, ...prev]);
-      triggerToast('Note added successfully.', 'success');
-    } catch (err) {
-      console.error(err);
-      triggerToast('Failed to log note.', 'error');
-    } finally {
-      setNotesLoading(false);
-    }
-  };
 
-  const handleEditNote = async (noteId, newContent) => {
-    try {
-      setNotesLoading(true);
-      const updated = await applicationService.updateNote(id, noteId, newContent);
-      setNotes(prev => prev.map(n => n.id === noteId ? updated : n));
-      triggerToast('Note updated successfully.', 'success');
-    } catch (err) {
-      console.error(err);
-      triggerToast('Failed to update note.', 'error');
-    } finally {
-      setNotesLoading(false);
-    }
-  };
-
-  const handleDeleteNote = async (noteId) => {
-    try {
-      setNotesLoading(true);
-      await applicationService.deleteNote(id, noteId);
-      setNotes(prev => prev.filter(n => n.id !== noteId));
-      triggerToast('Note deleted successfully.', 'success');
-    } catch (err) {
-      console.error(err);
-      triggerToast('Failed to delete note.', 'error');
-    } finally {
-      setNotesLoading(false);
-    }
-  };
 
   // 3. Resume download
   const handleDownloadResume = async () => {
@@ -194,13 +176,32 @@ export function ApplicantDetails() {
     return status;
   };
 
-  if (loading) {
+  if (showMatchScore && application) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-semibold text-slate-500 animate-pulse">Retrieving applicant files...</p>
-      </div>
+      <ApplicantMatchScore
+        jobId={application.job?.id}
+        candidateId={application.candidate?.id}
+        candidateName={application.candidate?.name}
+        jobTitle={application.job?.title}
+        onBack={() => setShowMatchScore(false)}
+      />
     );
+  }
+
+  if (showSkillMatching && application) {
+    return (
+      <ApplicantSkillMatching
+        jobId={application.job?.id}
+        candidateId={application.candidate?.id}
+        candidateName={application.candidate?.name}
+        jobTitle={application.job?.title}
+        onBack={() => setShowSkillMatching(false)}
+      />
+    );
+  }
+
+  if (loading) {
+    return <SkeletonProfile />;
   }
 
   if (error || !application) {
@@ -233,23 +234,14 @@ export function ApplicantDetails() {
         />
       )}
 
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        title="Confirm Status Transition"
-        message={`Are you sure you want to change this applicant's recruitment status to ${getStatusLabel(confirmStatusVal)}?`}
-        onConfirm={confirmStatusUpdate}
-        confirmText="Confirm Change"
-      />
+
 
       {/* Back Header */}
       <div className="flex items-center gap-4">
         <button
-          onClick={() => navigate('/recruiter/applicants')}
-          className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
-          title="Back to Applicants list"
-          disabled={statusLoading}
+          onClick={() => navigate(-1)}
+          className="p-2 border border-slate-200 text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded-xl transition-all self-start"
+          title="Back to lists"
         >
           <ArrowLeft className="w-4.5 h-4.5" />
         </button>
@@ -258,6 +250,24 @@ export function ApplicantDetails() {
           <p className="text-slate-500 text-sm mt-1">Review qualifications, inspect match indexes, and logs recruiter comments.</p>
         </div>
       </div>
+
+      {/* Hiring Pipeline Progress bar */}
+      <Card className="p-6 border border-slate-100 bg-white rounded-3xl shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-50 pb-3">
+          <div className="space-y-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Recruitment Flow Stage</span>
+            <h3 className="text-base font-extrabold text-slate-800 tracking-tight">Hiring Pipeline Progress</h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-slate-500">Current Status:</span>
+            <StageBadge stage={application.status} />
+          </div>
+        </div>
+        <PipelineProgress currentStage={application.status} />
+      </Card>
+
+      {/* Application Timeline Status History */}
+      <ApplicationTimeline applicationId={application.id} currentStage={application.status} />
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -374,6 +384,9 @@ export function ApplicantDetails() {
               </div>
             </div>
           </Card>
+
+          {/* E. Recruiter Notes Panel */}
+          <RecruiterNotes applicationId={application.id} />
         </div>
 
         {/* RIGHT COLUMN - Application Summary, Status and notes */}
@@ -397,6 +410,24 @@ export function ApplicantDetails() {
               </div>
             </div>
 
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMatchScore(true)}
+              className="w-full rounded-2xl font-black text-xs py-2.5 flex items-center justify-center gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50/50 mt-1"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-blue-500 shrink-0 animate-pulse" /> View Detailed Fit Report
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSkillMatching(true)}
+              className="w-full rounded-2xl font-black text-xs py-2.5 flex items-center justify-center gap-1.5 border-purple-200 text-purple-600 hover:bg-purple-50/50 mt-2"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-500 shrink-0 animate-pulse" /> View Skill Alignment Analysis
+            </Button>
+
             {/* Details Fields */}
             <div className="space-y-3.5 pt-2 text-xs font-semibold text-slate-600">
               <div className="flex justify-between items-center">
@@ -410,32 +441,24 @@ export function ApplicantDetails() {
               </div>
 
               <div className="flex justify-between items-center border-t border-slate-50 pt-3">
-                <span className="text-slate-400 uppercase tracking-wider text-[10px]">Current Status</span>
-                <Badge variant={getStatusBadgeVariant(application.status)} className="capitalize text-[10px] px-2.5">
-                  {getStatusLabel(application.status)}
-                </Badge>
+                <span className="text-slate-400 uppercase tracking-wider text-[10px]">Current Stage</span>
+                <StageBadge stage={application.status} />
               </div>
             </div>
 
-            {/* Change Status Dropdown */}
+            {/* Stage Selector */}
             <div className="border-t border-slate-100 pt-5 mt-2">
-              <StatusDropdown
-                currentStatus={application.status}
-                onChange={handleStatusChangeTrigger}
-                isLoading={statusLoading}
+              <StageSelector
+                applicationId={application.id}
+                currentStage={application.status}
+                onUpdateSuccess={async (newStage) => {
+                  triggerStatusChangeNotifications(newStage, application);
+                  await loadAllDetails();
+                }}
               />
             </div>
           </Card>
 
-          {/* Recruiter Notes Card */}
-          <NotesCard
-            notes={notes}
-            onAdd={handleAddNote}
-            onEdit={handleEditNote}
-            onDelete={handleDeleteNote}
-            currentRecruiterId={user?.id || 999}
-            isLoading={notesLoading}
-          />
         </div>
       </div>
     </div>

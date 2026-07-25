@@ -1,0 +1,57 @@
+import React from 'react';
+
+export function TopCompaniesTable({ companies = [] }) {
+  return (
+    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-4">
+      <div>
+        <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider dark:text-white">
+          Top Hiring Companies
+        </h3>
+        <p className="text-xs text-slate-400 font-semibold dark:text-slate-500">
+          Ranked by platform recruitment activities
+        </p>
+      </div>
+
+      <div className="overflow-x-auto w-full border border-slate-100 rounded-2xl dark:border-slate-800">
+        <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
+          <thead className="bg-slate-50/50 dark:bg-slate-900/50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider dark:text-slate-500 w-16">
+                Rank
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-black text-slate-400 uppercase tracking-wider dark:text-slate-500">
+                Company Name
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider dark:text-slate-500 w-32">
+                Active Jobs
+              </th>
+              <th scope="col" className="px-6 py-3 text-center text-xs font-black text-slate-400 uppercase tracking-wider dark:text-slate-500 w-40">
+                Total Applications
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-slate-100 dark:bg-slate-900 dark:divide-slate-800">
+            {companies.slice(0, 10).map((company, index) => (
+              <tr key={index} className="hover:bg-slate-50/50 transition-colors dark:hover:bg-slate-800/30">
+                <td className="px-6 py-3.5 whitespace-nowrap text-sm font-extrabold text-slate-505 dark:text-slate-400">
+                  #{company.rank || index + 1}
+                </td>
+                <td className="px-6 py-3.5 whitespace-nowrap text-sm font-extrabold text-slate-800 dark:text-white">
+                  {company.name}
+                </td>
+                <td className="px-6 py-3.5 whitespace-nowrap text-sm font-bold text-slate-505 text-center dark:text-slate-400">
+                  {company.activeJobs}
+                </td>
+                <td className="px-6 py-3.5 whitespace-nowrap text-sm font-bold text-slate-505 text-center dark:text-slate-400">
+                  {company.totalApplications.toLocaleString()}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default TopCompaniesTable;

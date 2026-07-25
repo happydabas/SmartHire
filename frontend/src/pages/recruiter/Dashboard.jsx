@@ -21,12 +21,15 @@ import { formatDate } from '@/utils/formatDate';
 
 // Reusable UI components
 import StatCard from '@/components/ui/StatCard';
-import Table from '@/components/ui/Table';
+import DataTable from '@/components/ui/DataTable';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptyRecruiterJobs from '@/components/common/EmptyRecruiterJobs';
 import Card from '@/components/ui/Card';
+import SkeletonTable from '@/components/common/SkeletonTable';
+import StageBadge from '@/components/ats/StageBadge';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -60,14 +63,7 @@ export function Dashboard() {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading recruiter workspace...</p>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (
@@ -86,11 +82,24 @@ export function Dashboard() {
     );
   }
 
-  const { stats, recentApplications, analytics } = dashboardData || {
+  const { stats, recentApplications, analytics, stageCounts } = dashboardData || {
     stats: { totalJobs: 0, activeJobs: 0, draftJobs: 0, closedJobs: 0, totalApplications: 0 },
     recentApplications: [],
-    analytics: { applicationsThisWeek: 0, activePipelines: 0, avgApplicationsPerJob: 0 }
+    analytics: { applicationsThisWeek: 0, activePipelines: 0, avgApplicationsPerJob: 0 },
+    stageCounts: { applied: 0, screening: 0, interview: 0, selected: 0, rejected: 0 }
   };
+
+  if (!loading && stats.totalJobs === 0) {
+    return (
+      <div className="max-w-xl mx-auto py-12 px-4 space-y-6 animate-fadeIn">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Recruiter Workspace</h1>
+          <p className="text-slate-500 text-sm mt-1">Manage jobs, candidates, and hiring analytics.</p>
+        </div>
+        <EmptyRecruiterJobs variant="dashboard" />
+      </div>
+    );
+  }
 
   // Map status name to UI Badge color variant
   const getStatusVariant = (status) => {
@@ -102,6 +111,38 @@ export function Dashboard() {
     if (s.includes('applied') || s.includes('submit') || s.includes('pending')) return 'primary';
     return 'neutral';
   };
+
+  const renderMobileCard = (row) => (
+    <Card key={row.id} className="p-5 border border-slate-100 bg-white space-y-4 shadow-sm rounded-2xl">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
+            {row.candidate?.name?.[0]?.toUpperCase() || 'C'}
+          </div>
+          <div className="flex flex-col">
+            <span className="font-bold text-slate-800 text-sm">{row.candidate?.name || 'Anonymous candidate'}</span>
+            <span className="text-[10px] text-slate-400 font-semibold">{row.candidate?.email}</span>
+          </div>
+        </div>
+        <StageBadge stage={row.status} />
+      </div>
+      <div className="flex justify-between items-center text-xs font-semibold text-slate-600 pt-3 border-t border-slate-50">
+        <span className="text-slate-700">{row.job?.title || 'Unknown Job'}</span>
+        <span className="text-[10px] text-slate-400">{formatDate(row.applied_at || row.created_at)}</span>
+      </div>
+      <div className="pt-2 flex justify-end">
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => triggerToast(`Candidate profile view for ${row.candidate?.name || 'Applicant'} is coming soon!`)}
+          className="w-full rounded-xl font-bold py-1.5 border border-slate-200 flex items-center justify-center gap-1"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>View</span>
+        </Button>
+      </div>
+    </Card>
+  );
 
   // Reusable columns definition for Recent Applications Table
   const tableColumns = [
@@ -138,12 +179,10 @@ export function Dashboard() {
       )
     },
     {
-      header: 'Current Status',
+      header: 'Current Stage',
       key: 'status',
       render: (row) => (
-        <Badge variant={getStatusVariant(row.status)} className="capitalize text-[10px] tracking-wide">
-          {row.status?.toLowerCase()}
-        </Badge>
+        <StageBadge stage={row.status} />
       )
     },
     {
@@ -235,48 +274,128 @@ export function Dashboard() {
           <ClipboardList className="w-5 h-5 text-blue-600" />
           <span>Hiring Snapshot</span>
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-          <StatCard
-            title="Total Jobs"
-            value={stats.totalJobs}
-            description="Overall job postings created"
-            icon={<Briefcase className="w-5 h-5" />}
-            iconBgColor="bg-slate-50"
-            iconColor="text-slate-600"
-          />
-          <StatCard
-            title="Active Jobs"
-            value={stats.activeJobs}
-            description="Open listings collecting applications"
-            icon={<CheckCircle className="w-5 h-5" />}
-            iconBgColor="bg-emerald-50"
-            iconColor="text-emerald-600"
-          />
-          <StatCard
-            title="Draft Jobs"
-            value={stats.draftJobs}
-            description="Postings pending final reviews"
-            icon={<FileClock className="w-5 h-5" />}
-            iconBgColor="bg-amber-50"
-            iconColor="text-amber-600"
-          />
-          <StatCard
-            title="Closed Jobs"
-            value={stats.closedJobs}
-            description="Fulfilled or expired listings"
-            icon={<AlertCircle className="w-5 h-5" />}
-            iconBgColor="bg-rose-50"
-            iconColor="text-rose-600"
-          />
-          <StatCard
-            title="Total Applications"
-            value={stats.totalApplications}
-            description="Total candidates applied"
-            icon={<Inbox className="w-5 h-5" />}
-            iconBgColor="bg-blue-50"
-            iconColor="text-blue-600"
-          />
-        </div>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 animate-pulse">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="p-5 space-y-3 border border-slate-100 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="h-3 bg-slate-200 rounded-lg w-20"></div>
+                  <div className="w-8 h-8 bg-slate-200 rounded-xl"></div>
+                </div>
+                <div className="h-7 bg-slate-200 rounded-xl w-12"></div>
+                <div className="h-3 bg-slate-200 rounded-lg w-24"></div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+            <StatCard
+              title="Total Jobs"
+              value={stats.totalJobs}
+              description="Overall job postings created"
+              icon={<Briefcase className="w-5 h-5" />}
+              iconBgColor="bg-slate-50"
+              iconColor="text-slate-600"
+            />
+            <StatCard
+              title="Active Jobs"
+              value={stats.activeJobs}
+              description="Open listings collecting applications"
+              icon={<CheckCircle className="w-5 h-5" />}
+              iconBgColor="bg-emerald-50"
+              iconColor="text-emerald-600"
+            />
+            <StatCard
+              title="Draft Jobs"
+              value={stats.draftJobs}
+              description="Postings pending final reviews"
+              icon={<FileClock className="w-5 h-5" />}
+              iconBgColor="bg-amber-50"
+              iconColor="text-amber-600"
+            />
+            <StatCard
+              title="Closed Jobs"
+              value={stats.closedJobs}
+              description="Fulfilled or expired listings"
+              icon={<AlertCircle className="w-5 h-5" />}
+              iconBgColor="bg-rose-50"
+              iconColor="text-rose-600"
+            />
+            <StatCard
+              title="Total Applications"
+              value={stats.totalApplications}
+              description="Total candidates applied"
+              icon={<Inbox className="w-5 h-5" />}
+              iconBgColor="bg-blue-50"
+              iconColor="text-blue-600"
+            />
+          </div>
+        )}
+      </section>
+
+      {/* Applications by Stage Analytics Cards */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+          <Users className="w-5 h-5 text-blue-600" />
+          <span>Applications by Pipeline Stage</span>
+        </h2>
+        {loading ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 animate-pulse">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Card key={i} className="p-5 space-y-3 border border-slate-100 bg-white">
+                <div className="h-3 bg-slate-200 rounded-lg w-20"></div>
+                <div className="h-7 bg-slate-200 rounded-xl w-12"></div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-500">Applied</span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-800">{stageCounts.applied}</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Initial submissions received</p>
+            </Card>
+            
+            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-500">Screening</span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-800">{stageCounts.screening}</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Candidates under active review</p>
+            </Card>
+            
+            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-500">Interview</span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-800">{stageCounts.interview}</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Scheduled and ongoing meetings</p>
+            </Card>
+            
+            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-500">Selected</span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-800">{stageCounts.selected}</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Offers extended or accepted</p>
+            </Card>
+            
+            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
+                <span className="text-xs font-bold text-slate-500">Rejected</span>
+              </div>
+              <h3 className="text-3xl font-black text-slate-800">{stageCounts.rejected}</h3>
+              <p className="text-[10px] text-slate-400 font-semibold">Archived or disqualified</p>
+            </Card>
+          </div>
+        )}
       </section>
 
       {/* 4. Analytics & Recent Applications split */}
@@ -290,7 +409,9 @@ export function Dashboard() {
             </span>
           </h2>
 
-          {recentApplications.length === 0 ? (
+          {loading ? (
+            <SkeletonTable rows={5} cols={4} />
+          ) : recentApplications.length === 0 ? (
             <EmptyState
               title="No applications received"
               description="Your job postings haven't received any applications yet. Create or check open jobs details."
@@ -298,10 +419,11 @@ export function Dashboard() {
               className="bg-white py-14"
             />
           ) : (
-            <Table
+            <DataTable
               columns={tableColumns}
               data={recentApplications}
               rowKey="id"
+              renderMobileCard={renderMobileCard}
               emptyState={
                 <EmptyState
                   title="No Applications"
@@ -320,47 +442,62 @@ export function Dashboard() {
             <span>Hiring Performance</span>
           </h2>
 
-          <Card className="p-6 border border-slate-100 shadow-sm bg-white space-y-6 rounded-3xl">
-            {/* Metric 1 */}
-            <div className="flex items-center justify-between py-2">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Applications This Week</p>
-                <p className="text-2xl font-black text-slate-800">{analytics.applicationsThisWeek}</p>
-                <p className="text-[10px] text-slate-400 font-medium">New candidates added in last 7 days</p>
+          {loading ? (
+            <Card className="p-6 border border-slate-100 shadow-sm bg-white space-y-6 rounded-3xl animate-pulse">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-2">
+                  <div className="space-y-2 flex-grow">
+                    <div className="h-3 bg-slate-200 rounded-lg w-2/3"></div>
+                    <div className="h-6 bg-slate-200 rounded-xl w-12"></div>
+                    <div className="h-2.5 bg-slate-200 rounded-lg w-1/2"></div>
+                  </div>
+                  <div className="w-11 h-11 bg-slate-200 rounded-2xl shrink-0"></div>
+                </div>
+              ))}
+            </Card>
+          ) : (
+            <Card className="p-6 border border-slate-100 shadow-sm bg-white space-y-6 rounded-3xl">
+              {/* Metric 1 */}
+              <div className="flex items-center justify-between py-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Applications This Week</p>
+                  <p className="text-2xl font-black text-slate-800">{analytics.applicationsThisWeek}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">New candidates added in last 7 days</p>
+                </div>
+                <div className="p-3 bg-blue-50/50 text-blue-600 rounded-2xl">
+                  <Calendar className="w-5 h-5" />
+                </div>
               </div>
-              <div className="p-3 bg-blue-50/50 text-blue-600 rounded-2xl">
-                <Calendar className="w-5 h-5" />
-              </div>
-            </div>
 
-            <hr className="border-slate-100" />
+              <hr className="border-slate-100" />
 
-            {/* Metric 2 */}
-            <div className="flex items-center justify-between py-2">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Hiring Pipelines</p>
-                <p className="text-2xl font-black text-slate-800">{analytics.activePipelines}</p>
-                <p className="text-[10px] text-slate-400 font-medium">Open postings with applicant activity</p>
+              {/* Metric 2 */}
+              <div className="flex items-center justify-between py-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Hiring Pipelines</p>
+                  <p className="text-2xl font-black text-slate-800">{analytics.activePipelines}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Open postings with applicant activity</p>
+                </div>
+                <div className="p-3 bg-emerald-50/50 text-emerald-600 rounded-2xl">
+                  <TrendingUp className="w-5 h-5" />
+                </div>
               </div>
-              <div className="p-3 bg-emerald-50/50 text-emerald-600 rounded-2xl">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
 
-            <hr className="border-slate-100" />
+              <hr className="border-slate-100" />
 
-            {/* Metric 3 */}
-            <div className="flex items-center justify-between py-2">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Applications / Job</p>
-                <p className="text-2xl font-black text-slate-800">{analytics.avgApplicationsPerJob}</p>
-                <p className="text-[10px] text-slate-400 font-medium">Overall ratio of candidates per listing</p>
+              {/* Metric 3 */}
+              <div className="flex items-center justify-between py-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Applications / Job</p>
+                  <p className="text-2xl font-black text-slate-800">{analytics.avgApplicationsPerJob}</p>
+                  <p className="text-[10px] text-slate-400 font-medium">Overall ratio of candidates per listing</p>
+                </div>
+                <div className="p-3 bg-purple-50/50 text-purple-600 rounded-2xl">
+                  <Users className="w-5 h-5" />
+                </div>
               </div>
-              <div className="p-3 bg-purple-50/50 text-purple-600 rounded-2xl">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-          </Card>
+            </Card>
+          )}
         </div>
       </div>
     </div>

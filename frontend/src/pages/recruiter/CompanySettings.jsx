@@ -12,6 +12,8 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import ImageUploader from '@/components/ui/ImageUploader';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
+import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
 // Simple URL validation regex
 const URL_REGEX = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/i;
@@ -163,19 +165,20 @@ export function CompanySettings() {
       triggerToast('Company settings updated successfully!', 'success');
     } catch (err) {
       console.error(err);
-      triggerToast('Failed to save company settings.', 'error');
+      const errorsMap = parseFormErrors(err);
+      if (errorsMap) {
+        setErrors(errorsMap);
+        triggerToast('Please correct validation errors on the form.', 'error');
+      } else {
+        triggerToast(extractErrorMessage(err) || 'Failed to save company settings.', 'error');
+      }
     } finally {
       setSaveLoading(false);
     }
   };
 
   if (initLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading company settings...</p>
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   // Handle case where recruiter is not linked to any company
@@ -323,14 +326,14 @@ export function CompanySettings() {
               </div>
 
               {/* Save Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end w-full sm:w-auto">
                 <Button
                   type="submit"
                   variant="primary"
                   size="md"
                   disabled={saveLoading || uploadLoading}
                   isLoading={saveLoading}
-                  className="rounded-xl font-bold flex items-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
+                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
                 >
                   <FileCheck className="w-4 h-4" />
                   <span>Save Settings</span>

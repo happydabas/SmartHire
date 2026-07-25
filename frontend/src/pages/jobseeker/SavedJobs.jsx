@@ -25,8 +25,10 @@ import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptySavedJobs from '@/components/common/EmptySavedJobs';
 import Modal from '@/components/ui/Modal';
+import SkeletonCard from '@/components/common/SkeletonCard';
 
 export function SavedJobsPage() {
   const navigate = useNavigate();
@@ -180,14 +182,7 @@ export function SavedJobsPage() {
 
   const processedJobs = getProcessedJobs();
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading bookmarked jobs...</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -308,23 +303,38 @@ export function SavedJobsPage() {
       </Card>
 
       {/* Main List */}
-      {processedJobs.length === 0 ? (
-        <EmptyState
-          title="No Bookmarked Jobs Found"
-          description={
-            searchQuery || filters.employment_type || filters.location || filters.work_mode
-              ? "No saved job listings match your current filters. Try resetting them."
-              : "You haven't bookmarked any jobs yet. Check out recommended job postings to save roles."
-          }
-          icon={<Bookmark className="w-12 h-12 text-slate-400" />}
-          action={
-            (searchQuery || filters.employment_type || filters.location || filters.work_mode) ? (
-              <Button variant="secondary" size="md" onClick={handleResetFilters} className="rounded-xl font-bold">
-                Clear Filters
-              </Button>
-            ) : null
-          }
-        />
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : savedJobs.length === 0 ? (
+        <EmptySavedJobs />
+      ) : processedJobs.length === 0 ? (
+        searchQuery.trim() ? (
+          <EmptyState
+            title="No results found."
+            description={`No results matching "${searchQuery}" were found. Try modifying your search.`}
+            icon={Search}
+            primaryButton={{
+              label: "Clear Search",
+              onClick: () => setSearchQuery('')
+            }}
+            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+          />
+        ) : (
+          <EmptyState
+            title="No items match your filters."
+            description="We couldn't find any saved jobs matching your active filter criteria. Try resetting them."
+            icon={Search}
+            primaryButton={{
+              label: "Reset Filters",
+              onClick: handleResetFilters
+            }}
+            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {processedJobs.map((job) => {

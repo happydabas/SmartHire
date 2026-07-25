@@ -12,7 +12,7 @@ export const Button = React.forwardRef(({
   type = 'button',
   ...props 
 }, ref) => {
-  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
+  const baseStyles = 'inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] active:translate-y-px transform';
   
   const variants = {
     primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/10 focus:ring-blue-500 border border-transparent',

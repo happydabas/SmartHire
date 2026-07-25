@@ -18,20 +18,24 @@ import {
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
 
-// Reusable UI components
-import SearchBar from '@/components/ui/SearchBar';
-import FilterDropdown from '@/components/ui/FilterDropdown';
-import SortDropdown from '@/components/ui/SortDropdown';
 import Pagination from '@/components/ui/Pagination';
 import DataTable from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptyApplicants from '@/components/common/EmptyApplicants';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 import ActionMenu from '@/components/ui/ActionMenu';
+import SkeletonTable from '@/components/common/SkeletonTable';
+import StageBadge from '@/components/ats/StageBadge';
+import ApplicantSearch from '@/components/ats/ApplicantSearch';
+import ApplicantFilters from '@/components/ats/ApplicantFilters';
+import ApplicantSort from '@/components/ats/ApplicantSort';
+import FilterChip from '@/components/ats/FilterChip';
+import { STAGE_LABELS } from '@/constants/ats';
 
 export function Applicants() {
   const navigate = useNavigate();
@@ -44,11 +48,11 @@ export function Applicants() {
   const statusParam = searchParams.get('status') || '';
   const jobIdParam = searchParams.get('jobId') || '';
   const sortParam = searchParams.get('sort') || 'latest';
+  const dateFilterParam = searchParams.get('dateFilter') || '';
+  const startDateParam = searchParams.get('startDate') || '';
+  const endDateParam = searchParams.get('endDate') || '';
   const pageParam = Number(searchParams.get('page')) || 1;
   const pageSizeParam = Number(searchParams.get('pageSize')) || 10;
-
-  // Search input state (for debouncing)
-  const [searchInput, setSearchInput] = useState(searchParam);
 
   // Listing data states
   const [loading, setLoading] = useState(true);
@@ -58,28 +62,6 @@ export function Applicants() {
   
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('info');
-
-  // Debounce search effect (400ms delay)
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setSearchParams(prev => {
-        if (searchInput.trim()) {
-          prev.set('search', searchInput.trim());
-        } else {
-          prev.delete('search');
-        }
-        prev.set('page', '1'); // reset page to 1
-        return prev;
-      });
-    }, 400);
-
-    return () => clearTimeout(handler);
-  }, [searchInput, setSearchParams]);
-
-  // Sync search input if URL changes externally
-  useEffect(() => {
-    setSearchInput(searchParam);
-  }, [searchParam]);
 
   // Initial jobs list load (for the job filter dropdown)
   useEffect(() => {
@@ -94,7 +76,6 @@ export function Applicants() {
     loadJobsList();
   }, []);
 
-  // Main data fetch
   const fetchApplications = async (forceRefetch = false) => {
     try {
       setLoading(true);
@@ -104,6 +85,9 @@ export function Applicants() {
         status: statusParam,
         jobId: jobIdParam,
         sort: sortParam,
+        dateFilter: dateFilterParam,
+        startDate: startDateParam,
+        endDate: endDateParam,
         page: pageParam,
         pageSize: pageSizeParam,
         forceRefetch
@@ -120,7 +104,7 @@ export function Applicants() {
   // Sync with URL parameter updates
   useEffect(() => {
     fetchApplications(false);
-  }, [searchParam, statusParam, jobIdParam, sortParam, pageParam, pageSizeParam]);
+  }, [searchParam, statusParam, jobIdParam, sortParam, dateFilterParam, startDateParam, endDateParam, pageParam, pageSizeParam]);
 
   // Force refetch on mount
   useEffect(() => {
@@ -139,6 +123,22 @@ export function Applicants() {
         prev.set(id, value);
       } else {
         prev.delete(id);
+      }
+      if (id === 'dateFilter' && value !== 'custom') {
+        prev.delete('startDate');
+        prev.delete('endDate');
+      }
+      prev.set('page', '1');
+      return prev;
+    });
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchParams(prev => {
+      if (value.trim()) {
+        prev.set('search', value.trim());
+      } else {
+        prev.delete('search');
       }
       prev.set('page', '1');
       return prev;
@@ -168,13 +168,53 @@ export function Applicants() {
     });
   };
 
+  const handleRemoveFilter = (key) => {
+    setSearchParams(prev => {
+      prev.delete(key);
+      if (key === 'dateFilter') {
+        prev.delete('startDate');
+        prev.delete('endDate');
+      }
+      prev.set('page', '1');
+      return prev;
+    });
+  };
+
   const handleClearAllFilters = () => {
-    setSearchInput('');
     setSearchParams({
       page: '1',
       pageSize: String(pageSizeParam)
     });
   };
+
+  // Compute active filters list for chips
+  const activeFilters = [];
+  if (statusParam) {
+    activeFilters.push({
+      key: 'status',
+      label: `Stage: ${STAGE_LABELS[statusParam.toLowerCase()] || statusParam}`
+    });
+  }
+  if (jobIdParam) {
+    const job = jobsList.find(j => String(j.id) === String(jobIdParam));
+    activeFilters.push({
+      key: 'jobId',
+      label: `Job: ${job?.title || 'Selected Job'}`
+    });
+  }
+  if (dateFilterParam) {
+    let dateLabel = '';
+    if (dateFilterParam === 'today') dateLabel = 'Today';
+    else if (dateFilterParam === '7days') dateLabel = 'Last 7 Days';
+    else if (dateFilterParam === '30days') dateLabel = 'Last 30 Days';
+    else if (dateFilterParam === 'custom') {
+      dateLabel = `Custom: ${startDateParam || '...'} to ${endDateParam || '...'}`;
+    }
+    activeFilters.push({
+      key: 'dateFilter',
+      label: `Date: ${dateLabel}`
+    });
+  }
 
   // Status badges variant map
   const getStatusBadgeVariant = (status) => {
@@ -271,12 +311,10 @@ export function Applicants() {
       )
     },
     {
-      header: 'Current Status',
+      header: 'Current Stage',
       key: 'status',
       render: (row) => (
-        <Badge variant={getStatusBadgeVariant(row.status)} className="capitalize text-[10px] tracking-wide px-2.5">
-          {getStatusLabel(row.status)}
-        </Badge>
+        <StageBadge stage={row.status} />
       )
     },
     {
@@ -341,9 +379,7 @@ export function Applicants() {
               <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{candidate.email}</p>
             </div>
           </div>
-          <Badge variant={getStatusBadgeVariant(row.status)} className="capitalize text-[10px] tracking-wide px-2.5">
-            {getStatusLabel(row.status)}
-          </Badge>
+          <StageBadge stage={row.status} />
         </div>
 
         <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
@@ -403,70 +439,70 @@ export function Applicants() {
 
       {/* Error message */}
       {error && (
-        <div className="flex items-center gap-3 p-4 text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl animate-fadeIn">
-          <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-          <span>{error}</span>
+        <div className="flex items-center justify-between p-4 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4.5 h-4.5 shrink-0 text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={() => fetchApplications(true)}
+            className="text-blue-600 hover:text-blue-700 underline font-bold"
+          >
+            Retry Connection
+          </button>
         </div>
       )}
 
-      {/* Search and Filters panel */}
-      <Card className="p-4 sm:p-5 border border-slate-100 bg-white rounded-2xl shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-end justify-between gap-4">
-          
-          <div className="flex-grow max-w-lg">
-            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 pl-0.5 select-none">Search Applicants</label>
-            <SearchBar
-              value={searchInput}
-              onChange={setSearchInput}
-              onClear={() => setSearchInput('')}
-              placeholder="Search by candidate name, job title, email..."
+      {/* Search, Filters, and Sorting card */}
+      <Card className="p-5 border border-slate-100 bg-white rounded-3xl shadow-sm space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          {/* Search Input (takes 2 cols on md+) */}
+          <div className="md:col-span-2">
+            <ApplicantSearch
+              initialValue={searchParam}
+              onSearchChange={handleSearchChange}
               disabled={loading && appsData.items.length === 0}
             />
           </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <FilterDropdown
-              label="Filter by Job"
-              value={jobIdParam}
-              onChange={(e) => handleFilterChange('jobId', e.target.value)}
-              options={jobsList.map(j => ({ label: j.title, value: String(j.id) }))}
-              placeholder="All Jobs"
-              disabled={loading && appsData.items.length === 0}
-            />
-
-            <FilterDropdown
-              label="Application Status"
-              value={statusParam}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              options={['Applied', 'Screening', 'Interview', 'Selected', 'Rejected', 'Withdrawn']}
-              placeholder="All Statuses"
-              disabled={loading && appsData.items.length === 0}
-            />
-
-            <SortDropdown
+          {/* Sorting */}
+          <div>
+            <ApplicantSort
               value={sortParam}
-              onChange={handleSortChange}
-              options={[
-                { label: 'Latest Applications', value: 'latest' },
-                { label: 'Oldest Applications', value: 'oldest' },
-                { label: 'Applicant Name (A-Z)', value: 'name' },
-                { label: 'Match Score (High-Low)', value: 'score' }
-              ]}
+              onSortChange={handleSortChange}
               disabled={loading && appsData.items.length === 0}
             />
           </div>
-
         </div>
 
-        {hasActiveFilters && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 bg-blue-50/50 px-3 py-2 rounded-xl self-start animate-fadeIn">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Active filters in use</span>
+        <div className="border-t border-slate-100 pt-5">
+          <ApplicantFilters
+            jobsList={jobsList}
+            selectedJob={jobIdParam}
+            selectedStage={statusParam}
+            selectedDateFilter={dateFilterParam}
+            startDate={startDateParam}
+            endDate={endDateParam}
+            onFilterChange={handleFilterChange}
+            disabled={loading && appsData.items.length === 0}
+          />
+        </div>
+
+        {/* Filter Summary Chips */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-100 animate-fadeIn">
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-0.5 select-none">Active Filters:</span>
+            {activeFilters.map((filter) => (
+              <FilterChip
+                key={filter.key}
+                label={filter.label}
+                onClear={() => handleRemoveFilter(filter.key)}
+              />
+            ))}
             <button
               onClick={handleClearAllFilters}
-              className="font-bold underline ml-2 hover:text-blue-800 transition-colors"
+              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline pl-1 focus:outline-none"
             >
-              Reset Filters
+              Clear All
             </button>
           </div>
         )}
@@ -474,9 +510,8 @@ export function Applicants() {
 
       {/* Main Content Listings */}
       {loading && appsData.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-          <Spinner size="lg" />
-          <p className="text-sm font-semibold text-slate-500 animate-pulse">Syncing candidate profile registries...</p>
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6">
+          <SkeletonTable rows={pageSizeParam} cols={5} />
         </div>
       ) : (
         <div className="relative">
@@ -490,28 +525,24 @@ export function Applicants() {
           )}
 
           {appsData.total === 0 ? (
-            <EmptyState
-              title={hasActiveFilters ? "No matching applicants found" : "No applicants yet"}
-              description={
-                hasActiveFilters
-                  ? "We couldn't find any candidate profiles matching your current search parameters. Try clearing search filters."
-                  : "No candidates have submitted applications for your job listings yet. We will notify you when applications arrive."
-              }
-              icon={<Inbox className="w-12 h-12 text-slate-400" />}
-              action={
-                hasActiveFilters ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleClearAllFilters}
-                    className="rounded-xl font-bold"
-                  >
-                    Clear Search Filters
-                  </Button>
-                ) : null
-              }
-              className="bg-white py-16 rounded-2xl shadow-sm border border-slate-100"
-            />
+            searchParam || statusParam || jobIdParam || dateFilterParam ? (
+              <EmptyState
+                title="No applicants match your search."
+                description="We couldn't find any candidate profiles matching your active search/filter criteria. Try resetting them."
+                icon={Inbox}
+                primaryButton={{
+                  label: "Clear All Filters",
+                  onClick: handleClearAllFilters
+                }}
+                secondaryButton={{
+                  label: "Reset Search",
+                  onClick: () => handleRemoveFilter('search')
+                }}
+                className="bg-white py-16 rounded-2xl shadow-sm border border-slate-100 animate-fadeIn"
+              />
+            ) : (
+              <EmptyApplicants />
+            )
           ) : (
             <div className="space-y-4 animate-in fade-in duration-200">
               <DataTable

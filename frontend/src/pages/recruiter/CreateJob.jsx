@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { jobService } from '@/services/jobs/jobService';
 import { skillsService } from '@/services/skills/skillsService';
+import { notificationService } from '@/services/notificationService';
 import { MASTER_SKILLS_CATALOG } from '@/pages/jobseeker/Skills';
 
 // Reusable UI components
@@ -31,6 +32,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
+import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
 // Predefined hiring pipeline templates
 const PIPELINE_TEMPLATES = [
@@ -223,7 +225,7 @@ export function CreateJob() {
         hiring_pipeline: pipelineStages
       };
 
-      await jobService.createJob(jobPayload);
+      const createdJob = await jobService.createJob(jobPayload);
       
       triggerToast(
         submitStatus === 'open' 
@@ -231,11 +233,23 @@ export function CreateJob() {
           : 'Job draft has been saved successfully!'
       );
       setSuccessMode(true);
+
+      // Trigger Job Published notification
+      if (submitStatus === 'open' && createdJob) {
+        notificationService.notifyJobPublished(createdJob.id, createdJob.title || formFields.title, user)
+          .catch(err => console.error('Notification publishing trigger error:', err));
+      }
     } catch (err) {
       console.error('Job creation error:', err);
-      const backendMessage = err.response?.data?.detail;
-      setGlobalError(backendMessage || 'Failed to create job posting. Please check your connection and try again.');
-      triggerToast('Failed to save job posting', 'error');
+      const errorsMap = parseFormErrors(err);
+      if (errorsMap) {
+        setFieldErrors(errorsMap);
+        triggerToast('Please correct validation errors first', 'error');
+      } else {
+        const backendMessage = extractErrorMessage(err);
+        setGlobalError(backendMessage || 'Failed to create job posting. Please check your connection and try again.');
+        triggerToast(backendMessage || 'Failed to save job posting', 'error');
+      }
     } finally {
       setSubmitting(false);
     }

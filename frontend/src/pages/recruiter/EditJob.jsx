@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { jobService } from '@/services/jobs/jobService';
 import { skillsService } from '@/services/skills/skillsService';
+import { notificationService } from '@/services/notificationService';
 import { MASTER_SKILLS_CATALOG } from '@/pages/jobseeker/Skills';
 
 // Reusable UI components
@@ -26,6 +27,8 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
+import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
 // Predefined hiring pipeline templates (matching CreateJob presets)
 const PIPELINE_TEMPLATES = [
@@ -55,6 +58,8 @@ export function EditJob() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const [originalStatus, setOriginalStatus] = useState('draft');
 
   // Loading, Submitting & Success states
   const [loading, setLoading] = useState(true);
@@ -169,6 +174,7 @@ export function EditJob() {
 
         // Fetch Job details
         const job = await jobService.getJobDetails(id);
+        setOriginalStatus(job.status);
         
         // Enforce ownership: only job creator or company owner can edit
         if (user.role === 'recruiter' && job.recruiter_id !== user.id) {
@@ -342,27 +348,44 @@ export function EditJob() {
       await jobService.updateJob(id, jobPayload);
       
       triggerToast('Job listing updated successfully!');
+
+      // Trigger notification if status changed
+      if (originalStatus !== updatedStatus) {
+        if (updatedStatus === 'open') {
+          if (originalStatus === 'draft') {
+            notificationService.notifyJobPublished(Number(id), jobPayload.title, user)
+              .catch(err => console.error('Notification publishing trigger error:', err));
+          } else if (originalStatus === 'closed') {
+            notificationService.notifyJobReopened(Number(id), jobPayload.title, user)
+              .catch(err => console.error('Notification reopening trigger error:', err));
+          }
+        } else if (updatedStatus === 'closed' && originalStatus === 'open') {
+          notificationService.notifyJobClosed(Number(id), jobPayload.title, user)
+            .catch(err => console.error('Notification closure trigger error:', err));
+        }
+      }
       
       setTimeout(() => {
         navigate('/recruiter/jobs');
       }, 1500);
     } catch (err) {
       console.error('Job update error:', err);
-      const backendMessage = err.response?.data?.detail;
-      setGlobalError(backendMessage || 'Failed to update job posting. Please check your connection.');
-      triggerToast('Failed to update job posting', 'error');
+      const errorsMap = parseFormErrors(err);
+      if (errorsMap) {
+        setFieldErrors(errorsMap);
+        triggerToast('Please correct validation errors first', 'error');
+      } else {
+        const backendMessage = extractErrorMessage(err);
+        setGlobalError(backendMessage || 'Failed to update job posting. Please check your connection.');
+        triggerToast(backendMessage || 'Failed to update job posting', 'error');
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-semibold text-slate-500 animate-pulse">Loading job specifications...</p>
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   if (globalError && !formFields.title) {

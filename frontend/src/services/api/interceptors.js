@@ -94,7 +94,7 @@ export const setupInterceptors = (axiosInstance) => {
           if (window.__auth_refresh_failed_listener__) {
             window.__auth_refresh_failed_listener__();
           } else {
-            window.location.href = '/login';
+            window.location.href = '/login?error=session_expired';
           }
           
           return Promise.reject(refreshError);
@@ -104,20 +104,45 @@ export const setupInterceptors = (axiosInstance) => {
       // Handle standard API errors
       if (error.response) {
         const { status } = error.response;
+        const urlStr = error.config?.url || '';
+        const isAuthRequest = urlStr.includes('login') || urlStr.includes('register') || urlStr.includes('refresh') || urlStr.includes('auth');
+
         switch (status) {
           case 400:
             console.error('Bad Request (400):', error.response.data);
             break;
+          case 401:
+            // Force logout and redirect if login endpoint itself returns 401
+            if (isAuthRequest) {
+              storage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+              storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+              storage.removeItem(STORAGE_KEYS.USER);
+              if (window.__auth_refresh_failed_listener__) {
+                window.__auth_refresh_failed_listener__();
+              } else {
+                window.location.href = '/login?error=session_expired';
+              }
+            }
+            break;
           case 403:
             console.error('Forbidden (403): Access is restricted.');
+            window.location.href = '/unauthorized';
             break;
           case 404:
             console.error('Not Found (404): Resource not found.');
+            // Skip redirecting if checking metadata / profiles that safely handle 404
+            if (!urlStr.includes('resume') && !urlStr.includes('profile') && !urlStr.includes('notifications') && !isAuthRequest) {
+              window.location.href = '/404';
+            }
             break;
           case 500:
             console.error('Internal Server Error (500): Technical issue on server.');
+            window.location.href = '/500';
             break;
         }
+      } else {
+        // Log unexpected errors securely without displaying details
+        console.error('Unexpected connection error:', error.message || error);
       }
       return Promise.reject(error);
     }

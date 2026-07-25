@@ -4,7 +4,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { validators } from '@/utils/validators';
-import { extractErrorMessage, mapLoginError } from '@/utils/errorParser';
+import { extractErrorMessage, mapLoginError, parseFormErrors } from '@/utils/errorParser';
+import ErrorMessage from '@/components/common/ErrorMessage';
 import { useAuth } from '@/hooks/useAuth';
 
 function Login() {
@@ -64,6 +65,13 @@ function Login() {
     setIsFormTouched((prev) => ({ ...prev, [field]: true }));
   };
 
+  useEffect(() => {
+    const errorParam = searchParams.get('error');
+    if (errorParam === 'session_expired') {
+      setFormError('Your session has expired. Please log in again.');
+    }
+  }, [searchParams]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isValid || isLoading) return;
@@ -89,14 +97,18 @@ function Login() {
       }, 1500);
     } catch (error) {
       console.error("DEBUG Login catch block caught error:", error);
-      console.error("DEBUG Login error.response:", error?.response);
-      console.error("DEBUG Login error.response?.data:", error?.response?.data);
       setIsLoading(false);
-      const rawError = extractErrorMessage(error);
-      console.error("DEBUG Login rawError:", rawError);
-      const mappedError = mapLoginError(rawError);
-      console.error("DEBUG Login mappedError:", mappedError);
-      setFormError(mappedError);
+      
+      const fieldErrors = parseFormErrors(error);
+      if (fieldErrors) {
+        if (fieldErrors.email) setEmailError(fieldErrors.email);
+        if (fieldErrors.password) setPasswordError(fieldErrors.password);
+        setFormError('Validation error. Please verify input data.');
+      } else {
+        const rawError = extractErrorMessage(error);
+        const mappedError = mapLoginError(rawError);
+        setFormError(mappedError);
+      }
     }
   };
 
@@ -125,6 +137,7 @@ function Login() {
           onBlur={() => handleBlur('email')}
           error={emailError}
           autoComplete="email"
+          disabled={isLoading}
           required
         />
 
@@ -140,13 +153,15 @@ function Login() {
             onBlur={() => handleBlur('password')}
             error={passwordError}
             autoComplete="current-password"
+            disabled={isLoading}
             required
             className="pr-12"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            disabled={isLoading}
+            className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -161,7 +176,8 @@ function Login() {
             type="checkbox"
             checked={rememberMe}
             onChange={(e) => setRememberMe(e.target.checked)}
-            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer"
+            disabled={isLoading}
+            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer disabled:opacity-50"
           />
           <span>Remember me</span>
         </label>
@@ -177,7 +193,7 @@ function Login() {
 
       {formError && (
         <div className="p-3.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl">
-          {formError}
+          <ErrorMessage message={formError} className="mt-0" />
         </div>
       )}
 

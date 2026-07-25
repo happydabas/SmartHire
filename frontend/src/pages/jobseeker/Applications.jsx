@@ -15,17 +15,22 @@ import {
 } from 'lucide-react';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
+import { useAuth } from '@/hooks/useAuth';
+import { notificationService } from '@/services/notificationService';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptyApplications from '@/components/common/EmptyApplications';
 import Modal from '@/components/ui/Modal';
+import SkeletonCard from '@/components/common/SkeletonCard';
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [applications, setApplications] = useState([]);
@@ -108,12 +113,18 @@ export function ApplicationsPage() {
       setActionLoading(true);
       setError(null);
       setSuccess(null);
-      await applicationService.withdrawApplication(appToWithdraw.id);
+      
+      const targetApp = appToWithdraw;
+      await applicationService.withdrawApplication(targetApp.id);
       
       setSuccess("Application withdrawn successfully.");
       setIsWithdrawOpen(false);
       setAppToWithdraw(null);
       await fetchApplicationsList();
+
+      // Trigger notification process in a non-blocking background thread
+      notificationService.notifyApplicationWithdrawn(targetApp.id, targetApp.job, user)
+        .catch(err => console.error("Notification withdrawal trigger error:", err));
     } catch (err) {
       console.error("Withdraw application error:", err);
       setError("Failed to withdraw the application. Please try again later.");
@@ -194,14 +205,7 @@ export function ApplicationsPage() {
 
   const processedApps = getProcessedApplications();
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading submitted applications...</p>
-      </div>
-    );
-  }
+
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
@@ -323,23 +327,38 @@ export function ApplicationsPage() {
       </Card>
 
       {/* Main Grid */}
-      {processedApps.length === 0 ? (
-        <EmptyState
-          title="No Applications Found"
-          description={
-            searchQuery || filters.status || filters.employment_type || filters.company
-              ? "No job applications match your current filters. Try resetting them."
-              : "You haven't submitted any job applications yet. Review active job listings to apply!"
-          }
-          icon={<Briefcase className="w-12 h-12 text-slate-400" />}
-          action={
-            (searchQuery || filters.status || filters.employment_type || filters.company) ? (
-              <Button variant="secondary" size="md" onClick={handleResetFilters} className="rounded-xl font-bold">
-                Clear Filters
-              </Button>
-            ) : null
-          }
-        />
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      ) : applications.length === 0 ? (
+        <EmptyApplications />
+      ) : processedApps.length === 0 ? (
+        searchQuery.trim() ? (
+          <EmptyState
+            title="No results found."
+            description={`No results matching "${searchQuery}" were found. Try modifying your search.`}
+            icon={Search}
+            primaryButton={{
+              label: "Clear Search",
+              onClick: () => setSearchQuery('')
+            }}
+            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+          />
+        ) : (
+          <EmptyState
+            title="No items match your filters."
+            description="We couldn't find any applications matching your active filter criteria. Try resetting them."
+            icon={Search}
+            primaryButton={{
+              label: "Reset Filters",
+              onClick: handleResetFilters
+            }}
+            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+          />
+        )
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {processedApps.map((app) => {

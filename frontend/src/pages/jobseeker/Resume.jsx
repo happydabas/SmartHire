@@ -30,19 +30,20 @@ import { educationService } from '@/services/education/educationService';
 import { experienceService } from '@/services/experience/experienceService';
 import { skillsService } from '@/services/skills/skillsService';
 import { formatDate } from '@/utils/formatDate';
+import { extractErrorMessage } from '@/utils/errorParser';
 
-// Reusable UI components
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
 import Badge from '@/components/ui/Badge';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import SkillChip from '@/components/ui/SkillChip';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
+import EmptyState from '@/components/common/EmptyState';
 
 // Master skills catalog
 const MASTER_SKILLS_CATALOG = [
@@ -119,7 +120,7 @@ function ResumeTab() {
       setMetadata(data);
     } catch (err) {
       if (err.response?.status === 404) setMetadata(null);
-      else setError('Failed to fetch resume status. Please try again.');
+      else setError(extractErrorMessage(err) || 'Failed to fetch resume status. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -160,8 +161,8 @@ function ResumeTab() {
       }
       setMetadata(data);
       setSelectedFile(null);
-    } catch {
-      setError('Failed to upload the resume file. Please verify parameters and try again.');
+    } catch (err) {
+      setError(extractErrorMessage(err) || 'Failed to upload the resume file. Please verify parameters and try again.');
     } finally {
       setActionLoading(false);
     }
@@ -174,8 +175,8 @@ function ResumeTab() {
       setError(null);
       await resumeService.downloadResume(metadata.file_name || 'resume.pdf');
       setSuccess('Download started!');
-    } catch {
-      setError('Failed to download the resume.');
+    } catch (err) {
+      setError(extractErrorMessage(err) || 'Failed to download the resume.');
     } finally {
       setActionLoading(false);
     }
@@ -191,8 +192,8 @@ function ResumeTab() {
       setMetadata(null);
       setSuccess('Resume deleted successfully.');
       setIsDeleteModalOpen(false);
-    } catch {
-      setError('Failed to delete the resume.');
+    } catch (err) {
+      setError(extractErrorMessage(err) || 'Failed to delete the resume.');
     } finally {
       setActionLoading(false);
     }
@@ -207,12 +208,7 @@ function ResumeTab() {
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading resume details...</p>
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   return (
@@ -221,36 +217,35 @@ function ResumeTab() {
       <AlertBanner type="success" message={success} />
 
       {!metadata ? (
-        <EmptyState
-          title="No Resume Uploaded"
-          description="You haven't uploaded a resume file yet. Upload a PDF copy of your CV to start applying for jobs."
-          icon={<FileText className="w-12 h-12 text-slate-400" />}
-          action={
-            <div className="flex flex-col items-center gap-4">
-              <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleFileSelect} />
-              {!selectedFile ? (
-                <Button variant="primary" size="md" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 rounded-2xl shadow-lg">
-                  <UploadCloud className="w-4 h-4" /> Select PDF File
-                </Button>
-              ) : (
-                <div className="flex flex-col items-center gap-3 border border-slate-200 bg-white p-5 rounded-2xl shadow-sm max-w-sm">
-                  <div className="flex items-center gap-3">
-                    <FileText className="w-6 h-6 text-blue-600" />
-                    <div className="text-left">
-                      <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]" title={selectedFile.name}>{selectedFile.name}</p>
-                      <p className="text-xs text-slate-400">{formatFileSize(selectedFile.size)}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 w-full mt-2">
-                    <Button variant="secondary" size="sm" onClick={() => setSelectedFile(null)} className="flex-1 rounded-xl" disabled={actionLoading}>Cancel</Button>
-                    <Button variant="primary" size="sm" onClick={handleUpload} isLoading={actionLoading} disabled={actionLoading} className="flex-grow rounded-xl">Upload Now</Button>
-                  </div>
+        <div>
+          <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={handleFileSelect} />
+          {!selectedFile ? (
+            <EmptyState
+              title="No resume uploaded."
+              description="Upload a PDF copy of your CV to start applying for jobs."
+              icon={FileText}
+              primaryButton={{
+                label: "Upload Resume",
+                onClick: () => fileInputRef.current?.click()
+              }}
+              className="bg-white border border-slate-100 shadow-sm w-full py-16"
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-3 border border-slate-200 bg-white p-5 rounded-2xl shadow-sm max-w-sm mx-auto animate-fadeIn">
+              <div className="flex items-center gap-3">
+                <FileText className="w-6 h-6 text-blue-600" />
+                <div className="text-left">
+                  <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]" title={selectedFile.name}>{selectedFile.name}</p>
+                  <p className="text-xs text-slate-400">{formatFileSize(selectedFile.size)}</p>
                 </div>
-              )}
-              <p className="text-xs text-slate-400">Supported formats: PDF only (Max size 5MB)</p>
+              </div>
+              <div className="flex gap-2 w-full mt-2">
+                <Button variant="secondary" size="sm" onClick={() => setSelectedFile(null)} className="flex-1 rounded-xl" disabled={actionLoading}>Cancel</Button>
+                <Button variant="primary" size="sm" onClick={handleUpload} isLoading={actionLoading} disabled={actionLoading} className="flex-grow rounded-xl">Upload Now</Button>
+              </div>
             </div>
-          }
-        />
+          )}
+        </div>
       ) : (
         <div className="space-y-6">
           <Card className="p-6 border border-slate-100 shadow-sm space-y-6 bg-white">
@@ -436,12 +431,7 @@ function EducationTab() {
     finally { setActionLoading(false); }
   };
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-      <Spinner size="lg" />
-      <p className="text-sm font-medium text-slate-500 animate-pulse">Loading education history...</p>
-    </div>
-  );
+  if (loading) return <SkeletonProfile />;
 
   return (
     <div className="space-y-6">
@@ -492,21 +482,21 @@ function EducationTab() {
       )}
 
       <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editingId ? 'Edit Academic Entry' : 'Add Academic Entry'} className="max-w-2xl">
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input label="Degree / Certificate" id="degree" value={formFields.degree} onChange={handleInputChange} error={fieldErrors.degree} placeholder="e.g. Bachelor of Science" required />
-            <Input label="Field of Study" id="field_of_study" value={formFields.field_of_study} onChange={handleInputChange} error={fieldErrors.field_of_study} placeholder="e.g. Computer Science" required />
+            <Input label="Degree / Certificate" id="degree" value={formFields.degree} onChange={handleInputChange} error={fieldErrors.degree} placeholder="e.g. Bachelor of Science" disabled={actionLoading} required />
+            <Input label="Field of Study" id="field_of_study" value={formFields.field_of_study} onChange={handleInputChange} error={fieldErrors.field_of_study} placeholder="e.g. Computer Science" disabled={actionLoading} required />
           </div>
-          <Input label="Institution / University Name" id="institution_name" value={formFields.institution_name} onChange={handleInputChange} error={fieldErrors.institution_name} placeholder="e.g. Stanford University" required />
+          <Input label="Institution / University Name" id="institution_name" value={formFields.institution_name} onChange={handleInputChange} error={fieldErrors.institution_name} placeholder="e.g. Stanford University" disabled={actionLoading} required />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-            <Input label="Start Date" id="start_date" type="date" value={formFields.start_date} onChange={handleInputChange} error={fieldErrors.start_date} required />
+            <Input label="Start Date" id="start_date" type="date" value={formFields.start_date} onChange={handleInputChange} error={fieldErrors.start_date} disabled={actionLoading} required />
             <div className="space-y-4">
-              <Input label="End Date" id="end_date" type="date" value={formFields.end_date} onChange={handleInputChange} error={fieldErrors.end_date} disabled={formFields.currently_studying} className={formFields.currently_studying ? 'bg-slate-50 cursor-not-allowed border-slate-200 opacity-60' : ''} />
-              <Checkbox label="I am currently studying here" id="currently_studying" checked={formFields.currently_studying} onChange={handleInputChange} />
+              <Input label="End Date" id="end_date" type="date" value={formFields.end_date} onChange={handleInputChange} error={fieldErrors.end_date} disabled={formFields.currently_studying || actionLoading} className={formFields.currently_studying ? 'bg-slate-50 cursor-not-allowed border-slate-200 opacity-60' : ''} />
+              <Checkbox label="I am currently studying here" id="currently_studying" checked={formFields.currently_studying} onChange={handleInputChange} disabled={actionLoading} />
             </div>
           </div>
-          <Input label="Grade / CGPA (Optional)" id="grade" value={formFields.grade} onChange={handleInputChange} error={fieldErrors.grade} placeholder="e.g. 3.92 / 4.0 or First Class" />
-          <Textarea label="Description / Achievements (Optional)" id="description" value={formFields.description} onChange={handleInputChange} placeholder="Describe coursework, honors, or major achievements..." rows={4} />
+          <Input label="Grade / CGPA (Optional)" id="grade" value={formFields.grade} onChange={handleInputChange} error={fieldErrors.grade} placeholder="e.g. 3.92 / 4.0 or First Class" disabled={actionLoading} />
+          <Textarea label="Description / Achievements (Optional)" id="description" value={formFields.description} onChange={handleInputChange} placeholder="Describe coursework, honors, or major achievements..." rows={4} disabled={actionLoading} />
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <Button variant="secondary" size="sm" onClick={() => setIsFormOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
             <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">{editingId ? 'Save Changes' : 'Add Entry'}</Button>
@@ -623,12 +613,7 @@ function ExperienceTab() {
     finally { setActionLoading(false); }
   };
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-      <Spinner size="lg" />
-      <p className="text-sm font-medium text-slate-500 animate-pulse">Loading experience timeline...</p>
-    </div>
-  );
+  if (loading) return <SkeletonProfile />;
 
   return (
     <div className="space-y-6">
@@ -686,13 +671,13 @@ function ExperienceTab() {
       <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} title={editingId ? 'Edit Work Experience' : 'Add Work Experience'} className="max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input label="Job Title" id="job_title" value={formFields.job_title} onChange={handleInputChange} error={fieldErrors.job_title} placeholder="e.g. Senior Software Engineer" required />
-            <Input label="Company Name" id="company_name" value={formFields.company_name} onChange={handleInputChange} error={fieldErrors.company_name} placeholder="e.g. Google LLC" required />
+            <Input label="Job Title" id="job_title" value={formFields.job_title} onChange={handleInputChange} error={fieldErrors.job_title} placeholder="e.g. Senior Software Engineer" disabled={actionLoading} required />
+            <Input label="Company Name" id="company_name" value={formFields.company_name} onChange={handleInputChange} error={fieldErrors.company_name} placeholder="e.g. Google LLC" disabled={actionLoading} required />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-1.5">
               <label htmlFor="employment_type" className="block text-sm font-semibold text-slate-700">Employment Type</label>
-              <select id="employment_type" value={formFields.employment_type} onChange={handleInputChange} className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+              <select id="employment_type" value={formFields.employment_type} onChange={handleInputChange} disabled={actionLoading} className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all disabled:bg-slate-50 disabled:text-slate-400">
                 <option value="">Select Employment Type</option>
                 <option value="Full-time">Full-time</option>
                 <option value="Part-time">Part-time</option>
@@ -701,16 +686,16 @@ function ExperienceTab() {
                 <option value="Freelance">Freelance</option>
               </select>
             </div>
-            <Input label="Location" id="location" value={formFields.location} onChange={handleInputChange} error={fieldErrors.location} placeholder="e.g. Mountain View, CA or Remote" />
+            <Input label="Location" id="location" value={formFields.location} onChange={handleInputChange} error={fieldErrors.location} placeholder="e.g. Mountain View, CA or Remote" disabled={actionLoading} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-            <Input label="Start Date" id="start_date" type="date" value={formFields.start_date} onChange={handleInputChange} error={fieldErrors.start_date} required />
+            <Input label="Start Date" id="start_date" type="date" value={formFields.start_date} onChange={handleInputChange} error={fieldErrors.start_date} disabled={actionLoading} required />
             <div className="space-y-4">
-              <Input label="End Date" id="end_date" type="date" value={formFields.currently_working ? '' : formFields.end_date} onChange={handleInputChange} error={fieldErrors.end_date} disabled={formFields.currently_working} className={formFields.currently_working ? 'bg-slate-50 cursor-not-allowed border-slate-200 opacity-60' : ''} />
-              <Checkbox label="I am currently working in this role" id="currently_working" checked={formFields.currently_working} onChange={handleInputChange} />
+              <Input label="End Date" id="end_date" type="date" value={formFields.currently_working ? '' : formFields.end_date} onChange={handleInputChange} error={fieldErrors.end_date} disabled={formFields.currently_working || actionLoading} className={formFields.currently_working ? 'bg-slate-50 cursor-not-allowed border-slate-200 opacity-60' : ''} />
+              <Checkbox label="I am currently working in this role" id="currently_working" checked={formFields.currently_working} onChange={handleInputChange} disabled={actionLoading} />
             </div>
           </div>
-          <Textarea label="Description / Key Responsibilities" id="description" value={formFields.description} onChange={handleInputChange} error={fieldErrors.description} placeholder="Outline your primary duties, technical stack used, key projects, and accomplishments..." rows={5} required />
+          <Textarea label="Description / Key Responsibilities" id="description" value={formFields.description} onChange={handleInputChange} error={fieldErrors.description} placeholder="Outline your primary duties, technical stack used, key projects, and accomplishments..." rows={5} disabled={actionLoading} required />
           <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
             <Button variant="secondary" size="sm" onClick={() => setIsFormOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
             <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">{editingId ? 'Save Changes' : 'Add Role'}</Button>
@@ -832,12 +817,7 @@ function SkillsTab() {
     return acc;
   }, {});
 
-  if (loading) return (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-      <Spinner size="lg" />
-      <p className="text-sm font-medium text-slate-500 animate-pulse">Loading skillset credentials...</p>
-    </div>
-  );
+  if (loading) return <SkeletonProfile />;
 
   return (
     <div className="space-y-6">
@@ -896,11 +876,11 @@ function SkillsTab() {
               <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-600 font-bold">{editingSkill.skill_name} ({editingSkill.category})</div>
             </div>
           ) : (
-            <SearchableSelect label="Select Skill" id="skill_id" options={MASTER_SKILLS_CATALOG} value={formFields.skill_id} onChange={handleInputChange} error={fieldErrors.skill_id} placeholder="Search or select catalog skill..." required />
+            <SearchableSelect label="Select Skill" id="skill_id" options={MASTER_SKILLS_CATALOG} value={formFields.skill_id} onChange={handleInputChange} error={fieldErrors.skill_id} placeholder="Search or select catalog skill..." disabled={actionLoading} required />
           )}
           <div className="space-y-1.5">
             <label htmlFor="proficiency_level" className="block text-sm font-semibold text-slate-700">Proficiency Level</label>
-            <select id="proficiency_level" value={formFields.proficiency_level} onChange={handleInputChange} className={`block w-full rounded-2xl border ${fieldErrors.proficiency_level ? 'border-red-500' : 'border-slate-200'} bg-white px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all`}>
+            <select id="proficiency_level" value={formFields.proficiency_level} onChange={handleInputChange} disabled={actionLoading} className={`block w-full rounded-2xl border ${fieldErrors.proficiency_level ? 'border-red-500' : 'border-slate-200'} bg-white px-4 py-3 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all disabled:bg-slate-50 disabled:text-slate-400`}>
               <option value="">Select Level</option>
               <option value="Beginner">Beginner</option>
               <option value="Intermediate">Intermediate</option>
@@ -909,10 +889,10 @@ function SkillsTab() {
             </select>
             {fieldErrors.proficiency_level && <p className="text-xs font-semibold text-red-500">{fieldErrors.proficiency_level}</p>}
           </div>
-          <Input label="Years of Experience" id="years_of_experience" type="number" value={formFields.years_of_experience} onChange={handleInputChange} error={fieldErrors.years_of_experience} placeholder="e.g. 3" min="0" required />
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-            <Button variant="secondary" size="sm" onClick={() => setIsFormOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">{editingSkill ? 'Save Changes' : 'Associate Skill'}</Button>
+          <Input label="Years of Experience" id="years_of_experience" type="number" value={formFields.years_of_experience} onChange={handleInputChange} error={fieldErrors.years_of_experience} placeholder="e.g. 3" min="0" disabled={actionLoading} required />
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
+            <Button variant="secondary" size="sm" onClick={() => setIsFormOpen(false)} disabled={actionLoading} className="w-full sm:w-auto rounded-xl font-bold">Cancel</Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="w-full sm:w-auto rounded-xl font-bold px-6">{editingSkill ? 'Save Changes' : 'Associate Skill'}</Button>
           </div>
         </form>
       </Modal>
@@ -920,9 +900,9 @@ function SkillsTab() {
       <Modal isOpen={isDeleteOpen} onClose={() => setIsDeleteOpen(false)} title="Remove Catalog Skill">
         <div className="space-y-4">
           <p className="text-slate-600 text-sm leading-relaxed">Are you sure you want to remove this skill from your profile?</p>
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-            <Button variant="secondary" size="sm" onClick={() => setIsDeleteOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
-            <Button variant="primary" size="sm" onClick={handleDeleteConfirm} isLoading={actionLoading} disabled={actionLoading} className="bg-red-600 hover:bg-red-700 focus:ring-red-500 rounded-xl font-bold">Confirm Delete</Button>
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
+            <Button variant="secondary" size="sm" onClick={() => setIsDeleteOpen(false)} disabled={actionLoading} className="w-full sm:w-auto rounded-xl font-bold">Cancel</Button>
+            <Button variant="primary" size="sm" onClick={handleDeleteConfirm} isLoading={actionLoading} disabled={actionLoading} className="w-full sm:w-auto bg-red-600 hover:bg-red-700 focus:ring-red-500 rounded-xl font-bold">Confirm Delete</Button>
           </div>
         </div>
       </Modal>

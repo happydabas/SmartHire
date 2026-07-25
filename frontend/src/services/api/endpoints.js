@@ -32,4 +32,12 @@ export const API_ENDPOINTS = {
   MY: {
     JOBS: '/my/jobs',
   },
+  NOTIFICATIONS: {
+    BASE: '/notifications',
+    READ_ALL: '/notifications/read-all',
+    UNREAD_COUNT: '/notifications/unread-count',
+  },
+  EMAILS: {
+    SEND: '/emails/send',
+  },
 };

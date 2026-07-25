@@ -4,9 +4,18 @@ export const extractErrorMessage = (error) => {
   // If error is just a string
   if (typeof error === 'string') return error;
 
+  // Handle Axios cancel, timeout, or network issues
+  if (error.code === 'ECONNABORTED' || error.message?.toLowerCase().includes('timeout') || error.message?.toLowerCase().includes('network error')) {
+    return "Unable to connect to the server. Please check your internet connection and try again.";
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    return "Unable to connect to the server. Please check your internet connection and try again.";
+  }
+
   // A) Network Error - No HTTP response received (error.response is undefined/null)
   if (!error.response) {
-    return "Unable to connect to the server. Please check your internet connection.";
+    return "Unable to connect to the server. Please check your internet connection and try again.";
   }
 
   const { status, data } = error.response;
@@ -75,10 +84,11 @@ export const extractErrorMessage = (error) => {
 export const mapRegistrationError = (msg) => {
   if (!msg || typeof msg !== 'string') return "An unexpected error occurred.";
   
-  if (msg.includes('already exists') || msg.includes('already registered') || msg.includes('email address already exists')) {
-    return "An account with this email already exists. Please log in instead.";
+  const lowerMsg = msg.toLowerCase();
+  if (lowerMsg.includes('already exists') || lowerMsg.includes('already registered') || lowerMsg.includes('email address already exists') || lowerMsg.includes('duplicate')) {
+    return "An account with this email already exists.";
   }
-  if (msg.includes('value is not a valid email address') || msg.includes('invalid email')) {
+  if (lowerMsg.includes('value is not a valid email address') || lowerMsg.includes('invalid email')) {
     return "Please enter a valid email address.";
   }
   return msg;
@@ -87,14 +97,41 @@ export const mapRegistrationError = (msg) => {
 export const mapLoginError = (msg) => {
   if (!msg || typeof msg !== 'string') return "An unexpected error occurred.";
   
-  if (msg.includes('Incorrect email or password') || msg.includes('Invalid credentials') || msg.includes('Unauthorized')) {
-    return "Invalid email or password.";
+  const lowerMsg = msg.toLowerCase();
+  if (
+    lowerMsg.includes('incorrect email or password') ||
+    lowerMsg.includes('invalid credentials') ||
+    lowerMsg.includes('unauthorized') ||
+    lowerMsg.includes('password') ||
+    lowerMsg.includes('login') ||
+    lowerMsg.includes('user not found') ||
+    lowerMsg.includes('no account found')
+  ) {
+    return "Incorrect email or password.";
   }
-  if (msg.includes('user does not exist') || msg.includes('No account found') || msg.includes('user not found')) {
-    return "No account found with this email.";
+  if (lowerMsg.includes('expired') || lowerMsg.includes('token') || lowerMsg.includes('session')) {
+    return "Your session has expired. Please log in again.";
   }
-  if (msg.toLowerCase().includes('inactive') || msg.toLowerCase().includes('disabled')) {
+  if (lowerMsg.includes('inactive') || lowerMsg.includes('disabled')) {
     return "Your account is inactive. Please contact support.";
   }
   return msg;
+};
+
+export const parseFormErrors = (error) => {
+  if (!error) return null;
+  if (error.response?.status === 422 && error.response?.data?.detail) {
+    const details = error.response.data.detail;
+    if (Array.isArray(details)) {
+      const fieldErrors = {};
+      details.forEach((err) => {
+        if (err.loc && Array.isArray(err.loc) && err.loc.length > 0) {
+          const field = err.loc[err.loc.length - 1];
+          fieldErrors[field] = err.msg || 'Invalid value';
+        }
+      });
+      return fieldErrors;
+    }
+  }
+  return null;
 };

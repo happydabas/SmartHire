@@ -22,13 +22,13 @@ export const ConfirmationDialog = ({
             {message}
           </p>
         )}
-        <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
           <Button
             variant="secondary"
             size="sm"
             onClick={onClose}
             disabled={isLoading}
-            className="rounded-xl font-bold"
+            className="w-full sm:w-auto rounded-xl font-bold"
           >
             {cancelText}
           </Button>
@@ -38,7 +38,7 @@ export const ConfirmationDialog = ({
             onClick={onConfirm}
             isLoading={isLoading}
             disabled={isLoading}
-            className="rounded-xl font-bold px-6"
+            className="w-full sm:w-auto rounded-xl font-bold px-6"
           >
             {confirmText}
           </Button>

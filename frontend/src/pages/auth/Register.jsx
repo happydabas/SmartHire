@@ -4,7 +4,8 @@ import { Eye, EyeOff } from 'lucide-react';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import { validators } from '@/utils/validators';
-import { extractErrorMessage, mapRegistrationError } from '@/utils/errorParser';
+import { extractErrorMessage, mapRegistrationError, parseFormErrors } from '@/utils/errorParser';
+import ErrorMessage from '@/components/common/ErrorMessage';
 import { authService } from '@/services/auth/authService';
 
 const PASSWORD_STRENGTH_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
@@ -106,34 +107,32 @@ function Register() {
     } catch (error) {
       setIsLoading(false);
       
-      const { response } = error;
-      if (response && response.status === 422 && response.data && Array.isArray(response.data.detail)) {
+      const fieldErrors = parseFormErrors(error);
+      if (fieldErrors) {
         let hasFieldErrors = false;
-        response.data.detail.forEach((err) => {
-          const field = err.loc[err.loc.length - 1];
-          if (field === 'name') {
-            setNameError(err.msg);
-            hasFieldErrors = true;
-          } else if (field === 'email') {
-            setEmailError('Please enter a valid email address.');
-            hasFieldErrors = true;
-          } else if (field === 'password') {
-            setPasswordError(err.msg);
-            hasFieldErrors = true;
-          }
-        });
-
+        if (fieldErrors.name) {
+          setNameError(fieldErrors.name);
+          hasFieldErrors = true;
+        }
+        if (fieldErrors.email) {
+          setEmailError('Please enter a valid email address.');
+          hasFieldErrors = true;
+        }
+        if (fieldErrors.password) {
+          setPasswordError(fieldErrors.password);
+          hasFieldErrors = true;
+        }
+        
         if (hasFieldErrors) {
           setFormError('Please correct the validation errors below.');
         } else {
           setFormError('Validation error. Please verify input data.');
         }
-        return;
+      } else {
+        const rawError = extractErrorMessage(error);
+        const mappedError = mapRegistrationError(rawError);
+        setFormError(mappedError);
       }
-
-      const rawError = extractErrorMessage(error);
-      const mappedError = mapRegistrationError(rawError);
-      setFormError(mappedError);
     }
   };
 
@@ -162,6 +161,7 @@ function Register() {
           onBlur={() => handleBlur('name')}
           error={nameError}
           autoComplete="name"
+          disabled={isLoading}
           required
         />
 
@@ -176,6 +176,7 @@ function Register() {
           onBlur={() => handleBlur('email')}
           error={emailError}
           autoComplete="email"
+          disabled={isLoading}
           required
         />
 
@@ -188,7 +189,8 @@ function Register() {
             id="role"
             value={role}
             onChange={(e) => setRole(e.target.value)}
-            className="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition-all cursor-pointer"
+            disabled={isLoading}
+            className="w-full px-4 py-2.5 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 hover:border-slate-300 transition-all cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
           >
             <option value="jobseeker">Job Seeker</option>
             <option value="recruiter">Recruiter</option>
@@ -207,13 +209,15 @@ function Register() {
             onBlur={() => handleBlur('password')}
             error={passwordError}
             autoComplete="new-password"
+            disabled={isLoading}
             required
             className="pr-12"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            disabled={isLoading}
+            className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -223,7 +227,7 @@ function Register() {
 
       {formError && (
         <div className="p-3.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl">
-          {formError}
+          <ErrorMessage message={formError} className="mt-0" />
         </div>
       )}
 

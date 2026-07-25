@@ -435,13 +435,13 @@ export function EducationPage() {
             rows={4}
           />
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setIsFormOpen(false)}
               disabled={actionLoading}
-              className="rounded-xl font-bold"
+              className="w-full sm:w-auto rounded-xl font-bold"
             >
               Cancel
             </Button>
@@ -451,7 +451,7 @@ export function EducationPage() {
               size="sm"
               isLoading={actionLoading}
               disabled={actionLoading}
-              className="rounded-xl font-bold px-6"
+              className="w-full sm:w-auto rounded-xl font-bold px-6"
             >
               {editingId ? 'Save Changes' : 'Add Entry'}
             </Button>

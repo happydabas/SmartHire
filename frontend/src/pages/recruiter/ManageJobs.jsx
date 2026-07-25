@@ -24,6 +24,7 @@ import { recruiterService } from '@/services/recruiter/recruiterService';
 import { jobService } from '@/services/jobs/jobService';
 import { formatDate } from '@/utils/formatDate';
 import { ROUTES } from '@/constants/routes';
+import { notificationService } from '@/services/notificationService';
 
 // Reusable UI components
 import SearchBar from '@/components/ui/SearchBar';
@@ -34,10 +35,12 @@ import DataTable from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/ui/EmptyState';
+import EmptyState from '@/components/common/EmptyState';
+import EmptyRecruiterJobs from '@/components/common/EmptyRecruiterJobs';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
+import SkeletonTable from '@/components/common/SkeletonTable';
 import ActionMenu from '@/components/ui/ActionMenu';
 
 export function ManageJobs() {
@@ -233,6 +236,12 @@ export function ManageJobs() {
         await jobService.closeJob(jobId);
         recruiterService.clearJobsCache();
         triggerToast('Job closed.', 'success');
+
+        // Trigger notification
+        const targetJob = jobs.find(j => j.id === jobId);
+        notificationService.notifyJobClosed(jobId, targetJob?.title || 'Job Listing', user)
+          .catch(err => console.error('Notification closure trigger error:', err));
+
         fetchJobs(true);
       } catch (err) {
         console.error(err);
@@ -259,6 +268,11 @@ export function ManageJobs() {
         await jobService.updateJob(jobId, payload);
         recruiterService.clearJobsCache();
         triggerToast('Job reopened.', 'success');
+
+        // Trigger notification
+        notificationService.notifyJobReopened(jobId, details?.title || 'Job Listing', user)
+          .catch(err => console.error('Notification reopening trigger error:', err));
+
         fetchJobs(true);
       } catch (err) {
         console.error(err);
@@ -299,6 +313,12 @@ export function ManageJobs() {
       await jobService.publishJob(jobId);
       recruiterService.clearJobsCache();
       triggerToast('Job updated successfully.', 'success');
+
+      // Trigger notification
+      const targetJob = jobs.find(j => j.id === jobId);
+      notificationService.notifyJobPublished(jobId, targetJob?.title || 'Job Listing', user)
+        .catch(err => console.error('Notification publishing trigger error:', err));
+
       fetchJobs(true);
     } catch (err) {
       console.error(err);
@@ -723,9 +743,8 @@ export function ManageJobs() {
 
       {/* Main Listings */}
       {loading && jobData.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[40vh] space-y-4">
-          <Spinner size="lg" />
-          <p className="text-sm font-semibold text-slate-500 animate-pulse">Syncing your job listings database...</p>
+        <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6">
+          <SkeletonTable rows={pageSizeParam} cols={5} />
         </div>
       ) : (
         <div className="relative">
@@ -739,37 +758,31 @@ export function ManageJobs() {
           )}
 
           {jobData.total === 0 ? (
-            <EmptyState
-              title={hasActiveFilters ? "No matching jobs found" : "No jobs found"}
-              description={
-                hasActiveFilters
-                  ? "We couldn't find any job postings matching your current search filters. Try clearing filters."
-                  : "You haven't posted any jobs under this recruiter account yet. Create your first listing now!"
-              }
-              icon={<Inbox className="w-12 h-12 text-slate-400" />}
-              action={
-                hasActiveFilters ? (
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleClearAllFilters}
-                    className="rounded-xl font-bold"
-                  >
-                    Clear Search Filters
-                  </Button>
-                ) : (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => navigate(ROUTES.RECRUITER_CREATE_JOB || '/recruiter/jobs/create')}
-                    className="rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-500/10"
-                  >
-                    <Plus className="w-4 h-4" /> Create Your First Job
-                  </Button>
-                )
-              }
-              className="bg-white py-16 rounded-2xl shadow-sm border border-slate-100"
-            />
+            searchParam ? (
+              <EmptyState
+                title="No results found."
+                description={`No results matching "${searchParam}" were found. Try modifying your search.`}
+                icon={Inbox}
+                primaryButton={{
+                  label: "Clear Search",
+                  onClick: () => setSearchInput('')
+                }}
+                className="bg-white py-16 rounded-2xl shadow-sm border border-slate-100"
+              />
+            ) : statusParam || jobTypeParam || workModeParam ? (
+              <EmptyState
+                title="No items match your filters."
+                description="We couldn't find any jobs matching your active filter criteria. Try resetting them."
+                icon={Inbox}
+                primaryButton={{
+                  label: "Reset Filters",
+                  onClick: handleClearAllFilters
+                }}
+                className="bg-white py-16 rounded-2xl shadow-sm border border-slate-100"
+              />
+            ) : (
+              <EmptyRecruiterJobs variant="manage" />
+            )
           ) : (
             <div className="space-y-4">
               <DataTable

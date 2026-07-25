@@ -73,6 +73,9 @@ export const applicationService = {
     status = '',
     jobId = '',
     sort = 'latest',
+    dateFilter = '',
+    startDate = '',
+    endDate = '',
     page = 1,
     pageSize = 10,
     forceRefetch = false
@@ -96,12 +99,14 @@ export const applicationService = {
       const appsArrays = await Promise.all(appsPromises);
       const allApps = appsArrays.flat();
       
-      // 3. Map mock match scores to align with table requirements
+      // 3. Map mock match scores and override status from localStorage
       cachedRecruiterApplications = allApps.map(app => {
         const appId = app.id || 0;
         const score = (appId % 30) + 70; // Deterministic score: 70% to 99%
+        const storedStatus = localStorage.getItem(`app_status_${appId}`);
         return {
           ...app,
+          status: storedStatus || app.status,
           matchScore: score
         };
       });
@@ -128,7 +133,35 @@ export const applicationService = {
       filtered = filtered.filter(app => String(app.job?.id) === String(jobId));
     }
 
-    // Apply Sorting (latest, oldest, name, score)
+    // Apply Date Filter
+    if (dateFilter) {
+      const now = new Date();
+      const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      filtered = filtered.filter(app => {
+        const appliedDate = new Date(app.applied_at || app.created_at);
+        if (dateFilter === 'today') {
+          return appliedDate >= startOfToday;
+        }
+        if (dateFilter === '7days') {
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          return appliedDate >= sevenDaysAgo;
+        }
+        if (dateFilter === '30days') {
+          const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          return appliedDate >= thirtyDaysAgo;
+        }
+        if (dateFilter === 'custom' && startDate && endDate) {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          end.setHours(23, 59, 59, 999);
+          return appliedDate >= start && appliedDate <= end;
+        }
+        return true;
+      });
+    }
+
+    // Apply Sorting (latest, oldest, name, nameDesc, score)
     filtered.sort((a, b) => {
       const dateA = new Date(a.applied_at || a.created_at || 0);
       const dateB = new Date(b.applied_at || b.created_at || 0);
@@ -139,7 +172,10 @@ export const applicationService = {
       if (sort === 'name') {
         return (a.candidate?.name || '').localeCompare(b.candidate?.name || '');
       }
-      if (sort === 'score') {
+      if (sort === 'nameDesc') {
+        return (b.candidate?.name || '').localeCompare(a.candidate?.name || '');
+      }
+      if (sort === 'score' || sort === 'matchScore') {
         return b.matchScore - a.matchScore;
       }
       // default 'latest'
@@ -192,12 +228,52 @@ export const applicationService = {
     return appDetails;
   },
 
-  updateApplicationStatus: async (applicationId, newStatus) => {
+  updateApplicationStatus: async (applicationId, newStatus, recruiterName = '') => {
     return new Promise((resolve) => {
       setTimeout(() => {
         localStorage.setItem(`app_status_${applicationId}`, newStatus);
+        
+        // Append history record
+        const historyKey = `app_history_${applicationId}`;
+        const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        
+        const newRecord = {
+          id: Date.now(),
+          status: newStatus,
+          updated_at: new Date().toISOString(),
+          recruiter_name: recruiterName || 'Recruiter',
+          comment: `Moved candidate to stage: ${newStatus}`
+        };
+        
+        existingHistory.push(newRecord);
+        localStorage.setItem(historyKey, JSON.stringify(existingHistory));
+        
         resolve({ id: applicationId, status: newStatus });
       }, 600);
+    });
+  },
+
+  getApplicationStatusHistory: async (applicationId) => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const historyKey = `app_history_${applicationId}`;
+        let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        
+        if (history.length === 0) {
+          // Initialize with a default Applied stage log
+          const defaultRecord = {
+            id: 1,
+            status: 'applied',
+            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+            recruiter_name: null,
+            comment: 'Application submitted successfully'
+          };
+          history = [defaultRecord];
+          localStorage.setItem(historyKey, JSON.stringify(history));
+        }
+        
+        resolve(history);
+      }, 400);
     });
   },
 

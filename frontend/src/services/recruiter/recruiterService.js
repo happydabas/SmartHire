@@ -177,8 +177,14 @@ export const recruiterService = {
 
     const totalApplications = applicationsResults.reduce((sum, res) => sum + res.totalCount, 0);
 
-    // 4. Flatten and compile all application records
-    const allApplications = applicationsResults.flatMap(res => res.items);
+    // 4. Flatten, compile, and override status overrides from localStorage
+    const allApplications = applicationsResults.flatMap(res => res.items).map(app => {
+      const storedStatus = localStorage.getItem(`app_status_${app.id}`);
+      return {
+        ...app,
+        status: storedStatus || app.status
+      };
+    });
 
     // Sort all application records by applied date descending
     const sortedApplications = [...allApplications].sort((a, b) => {
@@ -209,6 +215,23 @@ export const recruiterService = {
       ? parseFloat((totalApplications / totalJobs).toFixed(1)) 
       : 0;
 
+    // 5. Aggregate stage counts
+    const stageCounts = {
+      applied: 0,
+      screening: 0,
+      interview: 0,
+      selected: 0,
+      rejected: 0
+    };
+    allApplications.forEach(app => {
+      const stage = (app.status || '').toLowerCase();
+      if (stageCounts[stage] !== undefined) {
+        stageCounts[stage]++;
+      } else {
+        stageCounts.applied++;
+      }
+    });
+
     return {
       stats: {
         totalJobs,
@@ -223,6 +246,7 @@ export const recruiterService = {
         activePipelines,
         avgApplicationsPerJob,
       },
+      stageCounts
     };
   },
 };

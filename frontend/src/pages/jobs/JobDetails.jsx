@@ -17,11 +17,16 @@ import {
   Send
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { ROLES } from '@/constants/roles';
 import { jobService } from '@/services/jobs/jobService';
+import JobMatchScore from '@/pages/jobseeker/JobMatchScore';
+import JobSkillMatching from '@/pages/jobseeker/JobSkillMatching';
+import SimilarJobs from '@/components/ai/SimilarJobs';
 import { resumeService } from '@/services/resume/resumeService';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
 import { formatSalary } from '@/utils/formatSalary';
+import { notificationService } from '@/services/notificationService';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
@@ -29,11 +34,12 @@ import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Modal from '@/components/ui/Modal';
+import SkeletonProfile from '@/components/common/SkeletonProfile';
 
 export function JobDetailsPage() {
   const { id: jobId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   // Job and application state
   const [job, setJob] = useState(null);
@@ -53,6 +59,8 @@ export function JobDetailsPage() {
   const [isResumeWarningOpen, setIsResumeWarningOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
+  const [showMatchScore, setShowMatchScore] = useState(false);
+  const [showSkillMatching, setShowSkillMatching] = useState(false);
 
   const fetchJobDetails = async () => {
     try {
@@ -125,12 +133,16 @@ export function JobDetailsPage() {
       setApplyLoading(true);
       setError(null);
       
-      await applicationService.applyToJob(Number(jobId));
+      const appResult = await applicationService.applyToJob(Number(jobId));
 
       setSuccess("Your application was submitted successfully!");
       setHasApplied(true);
       setIsConfirmOpen(false);
       setIsSuccessModalOpen(true);
+
+      // Trigger notification process in a non-blocking background thread
+      notificationService.notifyApplicationSubmitted(appResult.id, job, user)
+        .catch(err => console.error("Notification submission trigger error:", err));
     } catch (err) {
       console.error("Apply job error:", err);
       setError(err?.response?.data?.detail || "Failed to submit application. Please try again.");
@@ -142,9 +154,9 @@ export function JobDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <Spinner size="lg" />
-        <p className="text-sm font-medium text-slate-500 animate-pulse">Loading job specifications...</p>
+      <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-pulse">
+        <div className="h-6 bg-slate-200 rounded-lg w-24"></div>
+        <SkeletonProfile />
       </div>
     );
   }
@@ -172,6 +184,26 @@ export function JobDetailsPage() {
 
   const typeLabel = typeof job.job_type === 'string' ? job.job_type : (job.job_type?.value || '');
   const modeLabel = typeof job.work_mode === 'string' ? job.work_mode : (job.work_mode?.value || '');
+
+  if (showMatchScore && job) {
+    return (
+      <JobMatchScore
+        jobId={Number(jobId)}
+        jobTitle={job.title}
+        onBack={() => setShowMatchScore(false)}
+      />
+    );
+  }
+
+  if (showSkillMatching && job) {
+    return (
+      <JobSkillMatching
+        jobId={Number(jobId)}
+        jobTitle={job.title}
+        onBack={() => setShowSkillMatching(false)}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-fadeIn">
@@ -227,7 +259,29 @@ export function JobDetailsPage() {
         </div>
 
         {/* Apply Trigger button */}
-        <div className="w-full md:w-auto shrink-0 pt-2 md:pt-0">
+        <div className="w-full md:w-auto shrink-0 pt-2 md:pt-0 flex flex-col sm:flex-row md:flex-col lg:flex-row gap-3">
+          {isAuthenticated && user?.role === ROLES.JOB_SEEKER && (
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowMatchScore(true)}
+                className="w-full md:w-auto rounded-2xl font-black py-4 px-8 tracking-wider shadow-sm flex items-center justify-center gap-1.5 border-blue-200 text-blue-600 hover:bg-blue-50/50"
+              >
+                <Sparkles className="w-4 h-4 shrink-0 text-blue-500 animate-pulse" /> Check AI Match Score
+              </Button>
+
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowSkillMatching(true)}
+                className="w-full md:w-auto rounded-2xl font-black py-4 px-8 tracking-wider shadow-sm flex items-center justify-center gap-1.5 border-purple-200 text-purple-600 hover:bg-purple-50/50"
+              >
+                <Sparkles className="w-4 h-4 shrink-0 text-purple-500 animate-pulse" /> Check Skill Alignment
+              </Button>
+            </>
+          )}
+
           <Button
             variant="primary"
             size="lg"
@@ -328,6 +382,8 @@ export function JobDetailsPage() {
               )}
             </div>
           </Card>
+
+          <SimilarJobs jobId={job.id} />
         </div>
 
       </div>
@@ -349,13 +405,13 @@ export function JobDetailsPage() {
               <span className="text-slate-400 font-medium">Your profile resume will be attached to this application.</span>
             </div>
           </div>
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setIsConfirmOpen(false)}
               disabled={applyLoading}
-              className="rounded-xl font-bold"
+              className="w-full sm:w-auto rounded-xl font-bold"
             >
               Cancel
             </Button>
@@ -365,7 +421,7 @@ export function JobDetailsPage() {
               onClick={handleConfirmApply}
               isLoading={applyLoading}
               disabled={applyLoading}
-              className="rounded-xl font-bold px-6"
+              className="w-full sm:w-auto rounded-xl font-bold px-6"
             >
               Apply
             </Button>
@@ -390,12 +446,12 @@ export function JobDetailsPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 border-t border-slate-100 pt-4">
             <Button
               variant="secondary"
               size="sm"
               onClick={() => setIsResumeWarningOpen(false)}
-              className="rounded-xl font-bold"
+              className="w-full sm:w-auto rounded-xl font-bold"
             >
               Cancel
             </Button>
@@ -406,7 +462,7 @@ export function JobDetailsPage() {
                 setIsResumeWarningOpen(false);
                 navigate('/resume');
               }}
-              className="rounded-xl font-bold px-6"
+              className="w-full sm:w-auto rounded-xl font-bold px-6"
             >
               Upload Resume
             </Button>

@@ -1,5 +1,11 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, test_rbac, companies, jobs, my, profiles, saved_jobs, applications, recruiter
+from app.api.v1.endpoints import health, auth, test_rbac, companies, jobs, my, profiles, saved_jobs, applications, recruiter, ai
+from app.api import resume_parser
+from app.api import resume_analysis
+from app.api import match_score
+from app.api import skill_matching
+from app.api import recommendations
+from app.api import insights
 
 api_router = APIRouter()
 
@@ -32,3 +38,24 @@ api_router.include_router(applications.router, prefix="/applications", tags=["Ap
 
 # Mount recruiter endpoint routes under /recruiter
 api_router.include_router(recruiter.router, prefix="/recruiter", tags=["Recruiter"])
+
+# Mount AI Foundation routes under /ai
+api_router.include_router(ai.router, prefix="/ai", tags=["AI Foundation"])
+
+# Mount Resume Parser routes under /resume-parser
+api_router.include_router(resume_parser.router, prefix="/resume-parser", tags=["Resume Parser"])
+
+# Mount Resume Analysis routes under /resume-analysis
+api_router.include_router(resume_analysis.router, prefix="/resume-analysis", tags=["Resume Analysis"])
+
+# Mount Match Score routes under /match-score
+api_router.include_router(match_score.router, prefix="/match-score", tags=["AI Match Score"])
+
+# Mount Skill Matching routes under /skill-matching
+api_router.include_router(skill_matching.router, prefix="/skill-matching", tags=["AI Skill Matching"])
+
+# Mount Recommendations routes under /recommendations
+api_router.include_router(recommendations.router, prefix="/recommendations", tags=["AI Recommendations"])
+
+# Mount AI Insights routes under /insights
+api_router.include_router(insights.router, prefix="/insights", tags=["AI Insights"])

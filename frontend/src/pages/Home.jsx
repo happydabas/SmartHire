@@ -1,18 +1,30 @@
 import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import { ROUTES } from '@/constants/routes';
+import { ROLES } from '@/constants/roles';
 
 function Home() {
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 font-sans antialiased">
-      <div className="p-8 bg-white border border-slate-200 rounded-3xl shadow-xl space-y-4 max-w-md w-full text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          SmartHire Frontend
-        </h1>
-        <p className="text-slate-600">
-          The production-ready React application foundation is successfully initialized.
-        </p>
+  const { isAuthenticated, user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (isAuthenticated && user) {
+    let redirectPath = ROUTES.LOGIN;
+    if (user.role === ROLES.JOB_SEEKER) redirectPath = ROUTES.DASHBOARD;
+    else if (user.role === ROLES.RECRUITER) redirectPath = ROUTES.RECRUITER;
+    else if (user.role === ROLES.COMPANY_OWNER) redirectPath = ROUTES.COMPANY;
+    else if (user.role === ROLES.ADMIN) redirectPath = ROUTES.ADMIN;
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return <Navigate to={ROUTES.LOGIN} replace />;
 }
 
 export default Home;
