@@ -19,10 +19,6 @@ const RecruiterDashboard = lazy(() => import('@/pages/recruiter/Dashboard'));
 const AdminDashboard = lazy(() => import('@/pages/admin/AdminDashboard'));
 const Profile = lazy(() => import('@/pages/jobseeker/Profile'));
 const Resume = lazy(() => import('@/pages/jobseeker/Resume'));
-const ResumeParser = lazy(() => import('@/pages/jobseeker/ResumeParser'));
-const ResumeAnalysis = lazy(() => import('@/pages/jobseeker/ResumeAnalysis'));
-const RecommendedJobs = lazy(() => import('@/pages/jobseeker/RecommendedJobs'));
-const RecommendationHistory = lazy(() => import('@/pages/jobseeker/RecommendationHistory'));
 const AIInsights = lazy(() => import('@/pages/jobseeker/AIInsights'));
 const HiringInsights = lazy(() => import('@/pages/recruiter/HiringInsights'));
 
@@ -103,14 +99,7 @@ function AppRoutes() {
             <Route path={ROUTES.DASHBOARD} element={<JobSeekerDashboard />} />
             <Route path={ROUTES.PROFILE} element={<Profile />} />
             <Route path={ROUTES.RESUME} element={<Resume />} />
-            <Route path={ROUTES.RESUME_PARSER} element={<ResumeParser />} />
-            <Route path={ROUTES.RESUME_ANALYSIS} element={<ResumeAnalysis />} />
-            <Route path={ROUTES.RECOMMENDED_JOBS} element={<RecommendedJobs />} />
-            <Route path={ROUTES.RECOMMENDATION_HISTORY} element={<RecommendationHistory />} />
             <Route path={ROUTES.AI_INSIGHTS} element={<AIInsights />} />
-            <Route path={ROUTES.EDUCATION} element={<Navigate to={ROUTES.RESUME} replace />} />
-            <Route path={ROUTES.EXPERIENCE} element={<Navigate to={ROUTES.RESUME} replace />} />
-            <Route path={ROUTES.SKILLS} element={<Navigate to={ROUTES.RESUME} replace />} />
 
             <Route path={ROUTES.JOBS} element={<Jobs />} />
             <Route path="/jobs/:id" element={<JobDetails />} />

@@ -14,7 +14,7 @@ export function EmptyState({
   return (
     <div
       className={clsx(
-        "flex flex-col items-center justify-center text-center p-8 sm:p-12 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50 max-w-lg mx-auto select-none animate-fadeIn",
+        "flex flex-col items-center justify-center text-center p-8 sm:p-12 border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl bg-slate-50/50 dark:bg-black/30 max-w-lg mx-auto select-none animate-fadeIn",
         className
       )}
       {...props}
@@ -29,10 +29,10 @@ export function EmptyState({
         </div>
       )}
       
-      <h3 className="text-lg font-bold text-slate-800 tracking-tight leading-snug">{title}</h3>
+      <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight leading-snug">{title}</h3>
       
       {description && (
-        <p className="text-sm font-semibold text-slate-500 mt-2 max-w-sm leading-relaxed">
+        <p className="text-sm font-semibold text-slate-550 dark:text-slate-400 mt-2 max-w-sm leading-relaxed">
           {description}
         </p>
       )}

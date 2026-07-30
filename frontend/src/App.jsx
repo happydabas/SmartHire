@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import AuthProvider from '@/contexts/AuthProvider';
 import NotificationProvider from '@/contexts/NotificationProvider';
 import AppRoutes from '@/routes/AppRoutes';
@@ -10,12 +11,14 @@ function App() {
   return (
     <BrowserRouter>
       <ErrorBoundary>
-        <AuthProvider>
-          <NotificationProvider>
-            <AppRoutes />
-            <Toaster position="top-right" richColors closeButton />
-          </NotificationProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <AppRoutes />
+              <Toaster position="top-right" richColors closeButton />
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </BrowserRouter>
   );

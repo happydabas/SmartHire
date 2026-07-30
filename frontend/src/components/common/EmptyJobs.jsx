@@ -16,7 +16,7 @@ export function EmptyJobs({ onClearFilters, onBrowseAll }) {
         label: "Browse All Jobs",
         onClick: onBrowseAll
       }}
-      className="bg-white border border-slate-100 shadow-sm w-full py-16"
+      className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-805 shadow-sm w-full py-16 rounded-2xl"
     />
   );
 }

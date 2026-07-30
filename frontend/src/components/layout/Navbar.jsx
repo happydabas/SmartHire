@@ -8,7 +8,7 @@ function Navbar({ onMenuClick }) {
   const { isAuthenticated } = useAuth();
 
   return (
-    <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40 shrink-0">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-40 shrink-0">
       <div className="flex items-center gap-4">
         {isAuthenticated && onMenuClick && (
           <button
@@ -19,9 +19,9 @@ function Navbar({ onMenuClick }) {
             <Menu className="w-5 h-5" />
           </button>
         )}
-        <Link to="/" className="text-xl font-black text-blue-600 tracking-tight flex items-center gap-1.5 hover:opacity-90">
+        <Link to="/" className="text-xl font-black text-blue-600 dark:text-white tracking-tight flex items-center gap-1.5 hover:opacity-90">
           <span className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-black text-lg shadow-md shadow-blue-500/20">S</span>
-          SmartHire
+          Smart<span className="text-blue-600">Hire</span>
         </Link>
       </div>
 

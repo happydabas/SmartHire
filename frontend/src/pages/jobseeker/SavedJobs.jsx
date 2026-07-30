@@ -189,8 +189,8 @@ export function SavedJobsPage() {
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Saved Jobs</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage and track your bookmarked career opportunities.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Saved Jobs</h1>
+          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Manage and track your bookmarked career opportunities.</p>
         </div>
 
         {error && (
@@ -209,15 +209,15 @@ export function SavedJobsPage() {
       </div>
 
       {/* Control Panel: Search, Sort, Filter */}
-      <Card className="p-6 border border-slate-100 shadow-sm space-y-5 bg-white">
+      <Card className="p-6 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-5 rounded-2xl shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
           {/* Search bar */}
           <div className="relative flex-grow max-w-lg flex items-center">
-            <Search className="absolute left-3 w-5 h-5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 w-5 h-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by job title, company, or location..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400"
+              className="w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 dark:text-white focus:bg-white dark:focus:bg-[#15161e] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400 dark:placeholder-slate-500"
               value={searchQuery}
               onChange={handleSearchChange}
             />
@@ -226,12 +226,12 @@ export function SavedJobsPage() {
           <div className="flex flex-wrap items-center gap-4">
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sort By</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sort By</span>
               <select
                 id="sortBy"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                className="bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
               >
                 <option value="recently_saved">Recently Saved</option>
                 <option value="recently_posted">Recently Posted</option>
@@ -252,14 +252,14 @@ export function SavedJobsPage() {
         </div>
 
         {/* Filters Panel Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-50 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Employment Type</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Employment Type</label>
             <select
               id="employment_type"
               value={filters.employment_type}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="">All Types</option>
               <option value="full_time">Full-time</option>
@@ -271,12 +271,12 @@ export function SavedJobsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Location</label>
             <select
               id="location"
               value={filters.location}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="">All Locations</option>
               {availableLocations.map(loc => (
@@ -286,12 +286,12 @@ export function SavedJobsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Work Mode</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Work Mode</label>
             <select
               id="work_mode"
               value={filters.work_mode}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="">All Modes</option>
               <option value="remote">Remote</option>
@@ -321,7 +321,7 @@ export function SavedJobsPage() {
               label: "Clear Search",
               onClick: () => setSearchQuery('')
             }}
-            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+            className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
           />
         ) : (
           <EmptyState
@@ -332,7 +332,7 @@ export function SavedJobsPage() {
               label: "Reset Filters",
               onClick: handleResetFilters
             }}
-            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+            className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
           />
         )
       ) : (
@@ -345,7 +345,7 @@ export function SavedJobsPage() {
             return (
               <Card 
                 key={job.id} 
-                className="flex flex-col justify-between p-6 hover:shadow-2xl hover:border-slate-300 transition-all duration-200 border border-slate-100 bg-white"
+                className="flex flex-col justify-between p-6 hover:shadow-md hover:border-slate-250/80 dark:hover:border-slate-700/80 transition-all duration-200 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-2xl"
               >
                 <div className="space-y-4">
                   {/* Header info */}
@@ -353,50 +353,50 @@ export function SavedJobsPage() {
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 
-                          className="font-bold text-slate-800 text-lg hover:text-blue-600 cursor-pointer transition-colors leading-snug truncate max-w-[220px]"
+                          className="font-semibold text-slate-800 text-lg hover:text-blue-600 cursor-pointer transition-colors leading-snug truncate max-w-[220px] dark:text-white"
                           onClick={() => handleViewJobDetails(job.id)}
                           title={job.title}
                         >
                           {job.title}
                         </h3>
                         
-                        <Badge variant={isClosed ? 'danger' : 'success'} className="capitalize text-[9px] py-0.5 px-2 tracking-wide font-bold">
+                        <Badge variant={isClosed ? 'danger' : 'success'} className="capitalize text-[9px] py-0.5 px-2 tracking-wide font-medium">
                           {job.status || 'open'}
                         </Badge>
                       </div>
 
-                      <p className="text-sm font-semibold text-slate-500 truncate" title={job.company?.name}>
+                      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 truncate" title={job.company?.name}>
                         {job.company?.name || 'Company Name'}
                       </p>
                     </div>
 
                     {/* Logo Placeholder */}
-                    <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border border-blue-100/50 shadow-inner">
+                    <div className="w-11 h-11 bg-blue-500/10 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 border border-blue-500/20 shadow-inner">
                       {(job.company?.name || 'C')[0]}
                     </div>
                   </div>
 
                   {/* Metadata labels */}
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-xs bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-100 font-medium">
+                    <div className="flex items-center gap-1.5 text-slate-550 dark:text-slate-300 text-xs bg-slate-50 dark:bg-[#090a0f] px-2.5 py-1 rounded-xl border border-slate-100 dark:border-slate-800/80 font-medium">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{job.location}</span>
                     </div>
 
                     {typeLabel && (
-                      <Badge variant="info" className="uppercase text-[9px] font-bold py-1 px-2.5 rounded-xl border border-blue-100/30">
+                      <Badge variant="info" className="uppercase text-[9px] font-medium py-1 px-2.5 rounded-xl border border-blue-100/30">
                         {typeLabel}
                       </Badge>
                     )}
 
                     {modeLabel && (
-                      <Badge variant="neutral" className="uppercase text-[9px] font-bold py-1 px-2.5 rounded-xl border border-slate-200/50">
+                      <Badge variant="neutral" className="uppercase text-[9px] font-medium py-1 px-2.5 rounded-xl border border-slate-200/50">
                         {modeLabel}
                       </Badge>
                     )}
 
                     {job.salary_min !== undefined && job.salary_min !== null && (
-                      <div className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-xl border border-emerald-100 flex items-center gap-0.5">
+                      <div className="text-xs font-medium text-emerald-800 bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 px-2.5 py-1 rounded-xl border border-emerald-200 dark:border-emerald-500/20 flex items-center gap-0.5">
                         <DollarSign className="w-3.5 h-3.5 shrink-0" />
                         <span>
                           {formatSalary(job.salary_min)} {job.salary_max ? `- ${formatSalary(job.salary_max)}` : ''}
@@ -407,7 +407,7 @@ export function SavedJobsPage() {
                 </div>
 
                 {/* Footnotes & dates */}
-                <div className="grid grid-cols-2 gap-4 text-[10px] text-slate-400 pt-5 border-t border-slate-50 mt-5">
+                <div className="grid grid-cols-2 gap-4 text-[10px] text-slate-400 dark:text-slate-500 pt-5 border-t border-slate-100 dark:border-slate-800 mt-5">
                   <div className="flex items-center gap-1 font-medium">
                     <Calendar className="w-3.5 h-3.5 shrink-0" />
                     <span>Posted {formatDate(job.created_at)}</span>
@@ -425,7 +425,7 @@ export function SavedJobsPage() {
                     size="sm"
                     onClick={() => handleTriggerUnsave(job)}
                     disabled={actionLoading}
-                    className="rounded-xl border border-red-50 text-red-500 hover:bg-red-50 font-bold py-2"
+                    className="rounded-xl border border-red-100/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-955/20 dark:border-red-950/20 font-semibold py-2"
                     title="Remove from saved list"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
@@ -436,7 +436,7 @@ export function SavedJobsPage() {
                     size="sm"
                     onClick={() => handleViewJobDetails(job.id)}
                     disabled={actionLoading}
-                    className="rounded-xl border border-slate-200 font-bold py-2 text-slate-600"
+                    className="rounded-xl border border-slate-200 dark:border-slate-800 font-semibold py-2 text-slate-650 dark:text-slate-300 dark:hover:bg-slate-800/40"
                   >
                     Details
                   </Button>
@@ -446,7 +446,7 @@ export function SavedJobsPage() {
                     size="sm"
                     onClick={() => handleViewJobDetails(job.id)}
                     disabled={actionLoading || isClosed}
-                    className={`rounded-xl font-bold py-2 shadow-sm ${isClosed ? 'opacity-50 cursor-not-allowed bg-slate-300 hover:bg-slate-300' : ''}`}
+                    className={`rounded-xl font-semibold py-2 shadow-sm ${isClosed ? 'opacity-50 cursor-not-allowed bg-slate-300 hover:bg-slate-300' : 'bg-blue-650 hover:bg-blue-700 text-white'}`}
                   >
                     Apply
                   </Button>

@@ -3,8 +3,42 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light mode defaults */
+  html {
+    --bg-page:   #ffffff;
+    --bg-card:   #ffffff;
+    --text-main: #0f172a;
+    --border:    #e2e8f0;
+  }
+
+  /* Dark mode overrides via .dark class on html */
+  html.dark {
+    --bg-page:   #090a0f;
+    --bg-card:   #15161e;
+    --text-main: #ffffff;
+    --border:    #1e293b;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-900 font-sans antialiased;
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    @apply font-sans antialiased;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+
+  /* Force all direct page wrapper divs to follow the page bg */
+  html:not(.dark) div.h-screen {
+    background-color: #ffffff !important;
+  }
+
+  /* Hide scrollbars globally while preserving scroll functionality */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 
   /* Global Accessible Keyboard Focus Indicator */

@@ -1,11 +1,15 @@
 import asyncio
 import os
+import sys
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from alembic import context
+
+# Add the project root directory to python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import settings and model Base metadata to configure autogenerate mappings
 from app.core.config import settings

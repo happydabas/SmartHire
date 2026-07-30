@@ -212,8 +212,8 @@ export function ApplicationsPage() {
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Job Applications</h1>
-          <p className="text-slate-500 text-sm mt-1">Review, filter, and track status updates for all applications you submitted to employers.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Job Applications</h1>
+          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Review, filter, and track status updates for all applications you submitted to employers.</p>
         </div>
 
         {error && (
@@ -232,15 +232,15 @@ export function ApplicationsPage() {
       </div>
 
       {/* Control Panel: Search, Sort, Filter */}
-      <Card className="p-6 border border-slate-100 shadow-sm space-y-5 bg-white">
+      <Card className="p-6 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-5 rounded-2xl shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-center justify-between">
           {/* Search bar */}
           <div className="relative flex-grow max-w-lg flex items-center">
-            <Search className="absolute left-3 w-5 h-5 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-3 w-5 h-5 text-slate-400 dark:text-slate-500 pointer-events-none" />
             <input
               type="text"
               placeholder="Search by job title or company name..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400"
+              className="w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-800 dark:text-white focus:bg-white dark:focus:bg-[#15161e] focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all placeholder-slate-400 dark:placeholder-slate-500"
               value={searchQuery}
               onChange={handleSearchChange}
             />
@@ -249,12 +249,12 @@ export function ApplicationsPage() {
           <div className="flex flex-wrap items-center gap-4">
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sort By</span>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sort By</span>
               <select
                 id="sortBy"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+                className="bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
               >
                 <option value="recently_applied">Recently Applied</option>
                 <option value="oldest">Oldest Applications</option>
@@ -268,7 +268,7 @@ export function ApplicationsPage() {
               variant="secondary"
               size="sm"
               onClick={handleResetFilters}
-              className="rounded-xl border border-slate-200 font-bold"
+              className="rounded-xl border border-slate-200 dark:border-slate-800 font-semibold"
             >
               Reset Filters
             </Button>
@@ -276,14 +276,14 @@ export function ApplicationsPage() {
         </div>
 
         {/* Filters Panel Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-50 pt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-100 dark:border-slate-800/80 pt-4">
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Status</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status</label>
             <select
               id="status"
               value={filters.status}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all capitalize"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all capitalize"
             >
               <option value="">All Statuses</option>
               {availableStatuses.map(status => (
@@ -293,12 +293,12 @@ export function ApplicationsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Company</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Company</label>
             <select
               id="company"
               value={filters.company}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="">All Companies</option>
               {availableCompanies.map(comp => (
@@ -308,12 +308,12 @@ export function ApplicationsPage() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Employment Type</label>
+            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Employment Type</label>
             <select
               id="employment_type"
               value={filters.employment_type}
               onChange={handleFilterChange}
-              className="block w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+              className="block w-full bg-white dark:bg-[#090a0f] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-sm text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
             >
               <option value="">All Types</option>
               <option value="full_time">Full-time</option>
@@ -345,7 +345,7 @@ export function ApplicationsPage() {
               label: "Clear Search",
               onClick: () => setSearchQuery('')
             }}
-            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+            className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
           />
         ) : (
           <EmptyState
@@ -356,7 +356,7 @@ export function ApplicationsPage() {
               label: "Reset Filters",
               onClick: handleResetFilters
             }}
-            className="bg-white border border-slate-100 shadow-sm w-full py-16"
+            className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
           />
         )
       ) : (
@@ -369,7 +369,7 @@ export function ApplicationsPage() {
             return (
               <Card 
                 key={app.id} 
-                className="flex flex-col justify-between p-6 hover:shadow-2xl hover:border-slate-300 transition-all duration-200 border border-slate-100 bg-white"
+                className="flex flex-col justify-between p-6 hover:shadow-md hover:border-slate-250/80 dark:hover:border-slate-700/80 transition-all duration-200 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-2xl"
               >
                 <div className="space-y-4">
                   {/* Header info */}
@@ -377,7 +377,7 @@ export function ApplicationsPage() {
                     <div className="space-y-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 
-                          className="font-bold text-slate-800 text-lg hover:text-blue-600 cursor-pointer transition-colors leading-snug truncate max-w-[220px]"
+                          className="font-semibold text-slate-800 text-lg hover:text-blue-600 cursor-pointer transition-colors leading-snug truncate max-w-[220px] dark:text-white"
                           onClick={() => handleCardClick(app.id)}
                           title={app.job?.title}
                         >
@@ -385,31 +385,31 @@ export function ApplicationsPage() {
                         </h3>
                       </div>
 
-                      <p className="text-sm font-semibold text-slate-500 truncate" title={app.job?.company_name}>
+                      <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 truncate" title={app.job?.company_name}>
                         {app.job?.company_name || 'Unknown Company'}
                       </p>
                     </div>
 
                     {/* Logo Placeholder */}
-                    <div className="w-11 h-11 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 border border-blue-100/50 shadow-inner">
+                    <div className="w-11 h-11 bg-blue-500/10 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 rounded-full flex items-center justify-center font-semibold text-sm shrink-0 border border-blue-500/20 shadow-inner">
                       {(app.job?.company_name || 'C')[0]}
                     </div>
                   </div>
 
                   {/* Metadata labels */}
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <div className="flex items-center gap-1.5 text-slate-500 text-xs bg-slate-50 px-2.5 py-1 rounded-xl border border-slate-100 font-medium">
+                    <div className="flex items-center gap-1.5 text-slate-550 dark:text-slate-300 text-xs bg-slate-50 dark:bg-[#090a0f] px-2.5 py-1 rounded-xl border border-slate-100 dark:border-slate-800/80 font-medium">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{app.job?.location || 'Unknown Location'}</span>
                     </div>
 
                     {app.job?.job_type && (
-                      <Badge variant="info" className="uppercase text-[9px] font-bold py-1 px-2.5 rounded-xl border border-blue-100/30">
+                      <Badge variant="info" className="uppercase text-[9px] font-medium py-1 px-2.5 rounded-xl border border-blue-100/30">
                         {app.job.job_type}
                       </Badge>
                     )}
 
-                    <Badge variant={getStatusVariant(app.status)} className="capitalize text-[10px] font-bold py-1 px-2.5 rounded-xl border border-slate-100/50">
+                    <Badge variant={getStatusVariant(app.status)} className="capitalize text-[10px] font-medium py-1 px-2.5 rounded-xl border border-slate-100/50">
                       {app.status}
                     </Badge>
                   </div>
@@ -435,20 +435,20 @@ export function ApplicationsPage() {
                       size="sm"
                       onClick={() => handleTriggerWithdraw(app)}
                       disabled={actionLoading}
-                      className="rounded-xl border border-red-50 text-red-500 hover:bg-red-50 font-bold py-2 px-4 text-xs"
+                      className="rounded-xl border border-red-100/50 text-red-500 hover:bg-red-50 dark:hover:bg-red-955/20 dark:border-red-950/20 font-semibold py-2 px-4 text-xs"
                       title="Withdraw Application"
                     >
                       Withdraw
                     </Button>
                   ) : (
-                    <div className="text-[10px] text-slate-400 font-bold italic py-2">
+                    <div className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold italic py-2">
                       Inactive Application
                     </div>
                   )}
 
                   <button
                     onClick={() => handleCardClick(app.id)}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline transition-all"
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline transition-all"
                   >
                     View Details <ArrowRight className="w-3.5 h-3.5" />
                   </button>

@@ -396,16 +396,16 @@ export function JobsPage() {
     <div className="space-y-6">
       {/* Employment Type */}
       <div className="space-y-2.5">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Employment Type</h4>
+        <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Employment Type</h4>
         <div className="flex flex-col gap-1">
           {EMPLOYMENT_TYPES.map(opt => (
             <button
               key={opt.value}
               onClick={() => handleFilterClick('employment_type', currentFilters.employment_type === opt.value ? '' : opt.value)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium border border-transparent transition-all ${
                 currentFilters.employment_type === opt.value 
-                  ? 'bg-blue-50 text-blue-700 font-bold' 
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-450 border-blue-100/50 dark:border-blue-500/20' 
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/30'
               }`}
             >
               {opt.label}
@@ -416,16 +416,16 @@ export function JobsPage() {
 
       {/* Work Mode */}
       <div className="space-y-2.5">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Work Mode</h4>
+        <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Work Mode</h4>
         <div className="flex flex-col gap-1">
           {WORK_MODES.map(opt => (
             <button
               key={opt.value}
               onClick={() => handleFilterClick('work_mode', currentFilters.work_mode === opt.value ? '' : opt.value)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium border border-transparent transition-all ${
                 currentFilters.work_mode === opt.value 
-                  ? 'bg-blue-50 text-blue-700 font-bold' 
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-450 border-blue-100/50 dark:border-blue-500/20' 
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/30'
               }`}
             >
               {opt.label}
@@ -436,16 +436,16 @@ export function JobsPage() {
 
       {/* Experience Level */}
       <div className="space-y-2.5">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Experience Level</h4>
+        <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Experience Level</h4>
         <div className="flex flex-col gap-1">
           {EXPERIENCE_LEVELS.map(opt => (
             <button
               key={opt.value}
               onClick={() => handleFilterClick('experience_level', currentFilters.experience_level === opt.value ? '' : opt.value)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium border border-transparent transition-all ${
                 currentFilters.experience_level === opt.value 
-                  ? 'bg-blue-50 text-blue-700 font-bold' 
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-450 border-blue-100/50 dark:border-blue-500/20' 
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/30'
               }`}
             >
               {opt.label}
@@ -456,16 +456,16 @@ export function JobsPage() {
 
       {/* Salary Range */}
       <div className="space-y-2.5">
-        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Salary Range</h4>
+        <h4 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Salary Range</h4>
         <div className="flex flex-col gap-1">
           {SALARY_RANGES.map(opt => (
             <button
               key={opt.value}
               onClick={() => handleFilterClick('min_salary', opt.value)}
-              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
+              className={`w-full text-left px-3 py-2 rounded-xl text-sm font-medium border border-transparent transition-all ${
                 currentFilters.min_salary === opt.value
-                  ? 'bg-blue-50 text-blue-700 font-bold'
-                  : 'text-slate-600 hover:bg-slate-50'
+                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-450 border-blue-100/50 dark:border-blue-500/20'
+                  : 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/60 dark:hover:bg-slate-800/30'
               }`}
             >
               {opt.label}
@@ -481,8 +481,8 @@ export function JobsPage() {
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Explore Job Openings</h1>
-          <p className="text-slate-500 text-sm mt-1">Discover active, verified career opportunities tailored for your professional growth.</p>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Explore Job Openings</h1>
+          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Discover active, verified career opportunities tailored for your professional growth.</p>
         </div>
 
         {error && (
@@ -508,7 +508,7 @@ export function JobsPage() {
           <input
             type="text"
             placeholder="Search by job title, company name, or location..."
-            className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-800 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm transition-all placeholder-slate-400 font-medium"
+            className="w-full bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm transition-all placeholder-slate-400 dark:placeholder-slate-500 font-medium"
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />
@@ -525,12 +525,12 @@ export function JobsPage() {
         <div className="flex items-center gap-3 justify-between md:justify-end">
           {/* Sorting */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Sort By</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Sort By</span>
             <select
               id="sort"
               value={sortBy}
               onChange={handleSortChange}
-              className="bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+              className="bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
             >
               {SORT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -540,12 +540,12 @@ export function JobsPage() {
 
           {/* Page Size */}
           <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">Show</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Show</span>
             <select
               id="pageSize"
               value={pageSize}
               onChange={handlePageSizeChange}
-              className="bg-white border border-slate-200 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+              className="bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
             >
               <option value="10">10 Jobs</option>
               <option value="20">20 Jobs</option>
@@ -556,7 +556,7 @@ export function JobsPage() {
           <Button
             variant="secondary"
             onClick={() => setIsDrawerOpen(true)}
-            className="lg:hidden rounded-2xl border border-slate-200 p-4 font-bold flex items-center justify-center gap-2 shrink-0 bg-white"
+            className="lg:hidden rounded-2xl border border-slate-200 dark:border-slate-800 p-4 font-semibold flex items-center justify-center gap-2 shrink-0 bg-white dark:bg-[#15161e] text-slate-700 dark:text-white"
           >
             <SlidersHorizontal className="w-5 h-5 text-slate-600" />
             <span className="hidden sm:inline">Filters</span>
@@ -566,22 +566,22 @@ export function JobsPage() {
 
       {/* Filter chips / Active filters row */}
       {isAnyFilterActive && (
-        <div className="flex flex-wrap items-center gap-2 bg-slate-50 border border-slate-100 p-3 rounded-2xl animate-fadeIn">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider px-2">Active:</span>
+        <div className="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 p-3 rounded-2xl animate-fadeIn">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-2">Active:</span>
           
           {currentFilters.search && (
-            <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-xl text-xs font-bold animate-scaleIn">
+            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20 px-3 py-1 rounded-xl text-xs font-semibold animate-scaleIn">
               Search: "{currentFilters.search}"
-              <button onClick={() => setSearchVal('')} className="hover:text-blue-900 transition-colors">
+              <button onClick={() => setSearchVal('')} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
           )}
 
           {activeChips.map(([key, val]) => (
-            <span key={key} className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1 rounded-xl text-xs font-bold animate-scaleIn">
+            <span key={key} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20 px-3 py-1 rounded-xl text-xs font-semibold animate-scaleIn">
               {getFilterLabel(key, val)}
-              <button onClick={() => handleRemoveFilterChip(key)} className="hover:text-blue-900 transition-colors">
+              <button onClick={() => handleRemoveFilterChip(key)} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                 <X className="w-3.5 h-3.5" />
               </button>
             </span>
@@ -600,11 +600,11 @@ export function JobsPage() {
       <div className="flex gap-8 items-start">
         
         {/* Desktop Filters Sidebar */}
-        <Card className="hidden lg:block w-72 shrink-0 border border-slate-100 p-6 space-y-6 bg-white self-start sticky top-6">
+        <Card className="hidden lg:block w-72 shrink-0 border border-slate-150/60 dark:border-slate-800 p-6 space-y-6 bg-white dark:bg-[#15161e] self-start sticky top-6 rounded-2xl">
           <div className="flex items-center justify-between border-b border-slate-50 pb-4">
-            <h3 className="text-base font-extrabold text-slate-900">Job Filters</h3>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">Job Filters</h3>
             {isAnyFilterActive && (
-              <button onClick={handleClearAll} className="text-xs text-blue-600 hover:text-blue-700 font-bold hover:underline">
+              <button onClick={handleClearAll} className="text-xs text-blue-600 hover:text-blue-700 font-semibold hover:underline">
                 Clear All
               </button>
             )}
@@ -630,7 +630,7 @@ export function JobsPage() {
                   label: "Clear Search",
                   onClick: () => setSearchVal('')
                 }}
-                className="bg-white border border-slate-100 shadow-sm w-full py-16"
+                className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
               />
             ) : activeChips.length > 0 ? (
               <EmptyState
@@ -641,7 +641,7 @@ export function JobsPage() {
                   label: "Reset Filters",
                   onClick: handleClearAll
                 }}
-                className="bg-white border border-slate-100 shadow-sm w-full py-16"
+                className="bg-white dark:bg-[#15161e] border border-slate-150/60 dark:border-slate-800 shadow-sm w-full py-16 rounded-2xl"
               />
             ) : (
               <EmptyJobs
@@ -666,7 +666,7 @@ export function JobsPage() {
                     <Card 
                       key={job.id} 
                       hoverable
-                      className="flex flex-col justify-between p-5 border border-slate-100 bg-white"
+                      className="flex flex-col justify-between p-5 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] hover:shadow-md hover:border-slate-250/80 dark:hover:border-slate-700/80 rounded-2xl transition-all duration-300"
                     >
                       <div className="space-y-4">
                         {/* Logo, Title and Company */}
@@ -685,7 +685,7 @@ export function JobsPage() {
                           </div>
 
                           {/* Logo Initials */}
-                          <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-xs shrink-0 border border-blue-100/50 shadow-inner">
+                          <div className="w-10 h-10 bg-blue-500/10 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border border-blue-500/20 shadow-inner">
                             {(job.company?.name || 'C')[0]}
                           </div>
                         </div>
@@ -694,7 +694,7 @@ export function JobsPage() {
                         {statusBadges.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
                             {statusBadges.map((badge, idx) => (
-                              <Badge key={idx} variant={badge.variant} className="text-[9px] py-0.5 px-2 tracking-wide font-extrabold capitalize">
+                              <Badge key={idx} variant={badge.variant} className="text-[9px] py-0.5 px-2 tracking-wide font-medium capitalize">
                                 {badge.text}
                               </Badge>
                             ))}
