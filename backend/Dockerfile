@@ -24,4 +24,4 @@ COPY . .
 EXPOSE 8000
 
 # Execute server initialization script or run server directly
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
