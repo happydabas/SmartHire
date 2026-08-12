@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, test_rbac, companies, jobs, my, profiles, saved_jobs, applications, recruiter, ai
+from app.api.v1.endpoints import health, auth, test_rbac, companies, invitations, jobs, my, profiles, saved_jobs, applications, recruiter, ai
 from app.api import resume_parser
 from app.api import resume_analysis
 from app.api import match_score
@@ -14,6 +14,9 @@ api_router.include_router(health.router, prefix="/health")
 
 # Mount authentication endpoint routes under /auth
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+
+# Mount invitations endpoint routes under /invitations
+api_router.include_router(invitations.router, prefix="/invitations", tags=["Invitations"])
 
 # Mount RBAC testing endpoint routes under /test
 api_router.include_router(test_rbac.router, prefix="/test", tags=["RBAC Test"])

@@ -19,8 +19,7 @@ export const PublicRoute = ({ children }) => {
     let redirectPath = ROUTES.HOME;
     
     if (user.role === ROLES.JOB_SEEKER) redirectPath = ROUTES.DASHBOARD;
-    else if (user.role === ROLES.RECRUITER) redirectPath = ROUTES.RECRUITER;
-    else if (user.role === ROLES.COMPANY_OWNER) redirectPath = ROUTES.COMPANY;
+    else if (user.role === ROLES.RECRUITER || user.role === ROLES.COMPANY_OWNER) redirectPath = ROUTES.RECRUITER;
     else if (user.role === ROLES.ADMIN) redirectPath = ROUTES.ADMIN;
 
     return <Navigate to={redirectPath} replace />;

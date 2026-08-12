@@ -37,10 +37,12 @@ export const setupInterceptors = (axiosInstance) => {
       const originalRequest = error.config;
 
       const urlStr = originalRequest?.url || '';
-      const isAuthRequest = urlStr.includes('login') || urlStr.includes('register') || urlStr.includes('refresh') || urlStr.includes('auth');
+      // Only exclude login, register, and refresh from token-refresh logic.
+      // /auth/me is a legitimate authenticated endpoint that should support token refresh.
+      const isAuthMutation = urlStr.includes('/auth/login') || urlStr.includes('/auth/register') || urlStr.includes('/auth/refresh');
 
       // Handle 401 Unauthorized errors and prevent infinite recursion loops
-      if (error.response?.status === 401 && !originalRequest._retry && !isAuthRequest) {
+      if (error.response?.status === 401 && !originalRequest._retry && !isAuthMutation) {
         if (isRefreshing) {
           // Queue requests if token refresh is already in progress
           return new Promise((resolve, reject) => {
@@ -105,15 +107,16 @@ export const setupInterceptors = (axiosInstance) => {
       if (error.response) {
         const { status } = error.response;
         const urlStr = error.config?.url || '';
-        const isAuthRequest = urlStr.includes('login') || urlStr.includes('register') || urlStr.includes('refresh') || urlStr.includes('auth');
+        const isAuthMutation = urlStr.includes('/auth/login') || urlStr.includes('/auth/register') || urlStr.includes('/auth/refresh');
 
         switch (status) {
           case 400:
             console.error('Bad Request (400):', error.response.data);
             break;
           case 401:
-            // Force logout and redirect if login endpoint itself returns 401
-            if (isAuthRequest) {
+            // For auth mutation requests (login/register), let the 401 error bubble up to UI try/catch block.
+            // For non-auth requests where token refresh failed, clean up session storage.
+            if (!isAuthMutation) {
               storage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
               storage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
               storage.removeItem(STORAGE_KEYS.USER);
@@ -125,19 +128,16 @@ export const setupInterceptors = (axiosInstance) => {
             }
             break;
           case 403:
-            console.error('Forbidden (403): Access is restricted.');
-            window.location.href = '/unauthorized';
+            // Let components handle 403 errors locally instead of force-redirecting.
+            // This prevents legitimate API calls (e.g. fetching recruiters) from hijacking navigation.
+            console.error('Forbidden (403): Access is restricted for:', urlStr);
             break;
           case 404:
-            console.error('Not Found (404): Resource not found.');
-            // Skip redirecting if checking metadata / profiles that safely handle 404
-            if (!urlStr.includes('resume') && !urlStr.includes('profile') && !urlStr.includes('notifications') && !isAuthRequest) {
-              window.location.href = '/404';
-            }
+            // Let components/services handle 404 errors locally instead of force-redirecting the whole page.
+            console.error('Not Found (404): Resource not found for:', urlStr);
             break;
           case 500:
-            console.error('Internal Server Error (500): Technical issue on server.');
-            window.location.href = '/500';
+            console.error('Internal Server Error (500): Technical issue on server for:', urlStr);
             break;
         }
       } else {

@@ -241,14 +241,16 @@ export function Dashboard() {
           <Activity className="w-5 h-5 text-blue-600" />
           <span>Quick Actions</span>
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Button
-            onClick={() => triggerToast('Create Job flow is coming soon!')}
-            className="flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 border border-transparent transition-all"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span>Create New Job</span>
-          </Button>
+        <div className={`grid grid-cols-1 ${Boolean(user?.is_owner || user?.role === 'company_owner') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
+          {Boolean(user?.is_owner || user?.role === 'company_owner') && (
+            <Button
+              onClick={() => navigate('/recruiter/jobs/create')}
+              className="flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 border border-transparent transition-all"
+            >
+              <PlusCircle className="w-5 h-5" />
+              <span>Create New Job</span>
+            </Button>
+          )}
 
           <Button
             onClick={() => navigate('/recruiter/jobs')}

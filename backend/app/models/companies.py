@@ -95,8 +95,7 @@ class Company(Base, TimestampMixin):
     owner: Mapped["User"] = relationship(
         "User",
         back_populates="owned_companies",
-        foreign_keys=[owner_id],
-        lazy="selectin"
+        foreign_keys=[owner_id]
     )
 
     # One-to-Many relationship between Company and Jobs
@@ -104,8 +103,7 @@ class Company(Base, TimestampMixin):
     jobs: Mapped[List["Job"]] = relationship(
         "Job",
         back_populates="company",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        cascade="all, delete-orphan"
     )
 
     # One-to-Many relationship between Company and Recruiters
@@ -113,14 +111,12 @@ class Company(Base, TimestampMixin):
         "User",
         back_populates="company",
         foreign_keys="[User.company_id]",
-        cascade="save-update, merge",
-        lazy="selectin"
+        cascade="save-update, merge"
     )
 
     # One-to-Many relationship between Company and Invitations
     invitations: Mapped[List["CompanyInvitation"]] = relationship(
         "CompanyInvitation",
         back_populates="company",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        cascade="all, delete-orphan"
     )

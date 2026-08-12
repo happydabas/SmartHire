@@ -23,6 +23,7 @@ import {
 import { jobService } from '@/services/jobs/jobService';
 import { formatDate } from '@/utils/formatDate';
 import { formatSalary } from '@/utils/formatSalary';
+import { formatJobType, formatWorkMode, formatExperienceLevel } from '@/utils/enumFormatters';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
@@ -101,7 +102,7 @@ export function JobsPage() {
 
   // Read current filters, sorting and pagination parameters from URL params
   const currentPage = Number(searchParams.get('page')) || 1;
-  const pageSize = Number(searchParams.get('pageSize')) || 10;
+  const pageSize = 10; // Fixed page limit set to 10 per page
   const sortBy = searchParams.get('sort') || 'latest';
 
   const currentFilters = {
@@ -174,19 +175,19 @@ export function JobsPage() {
         if (currentFilters.employment_type) {
           list = list.filter(job => {
             const type = typeof job.job_type === 'string' ? job.job_type : (job.job_type?.value || '');
-            return type.toLowerCase() === currentFilters.employment_type.toLowerCase();
+            return type.toLowerCase().replace(/_/g, '-') === currentFilters.employment_type.toLowerCase().replace(/_/g, '-');
           });
         }
         if (currentFilters.work_mode) {
           list = list.filter(job => {
             const mode = typeof job.work_mode === 'string' ? job.work_mode : (job.work_mode?.value || '');
-            return mode.toLowerCase() === currentFilters.work_mode.toLowerCase();
+            return mode.toLowerCase().replace(/_/g, '-') === currentFilters.work_mode.toLowerCase().replace(/_/g, '-');
           });
         }
         if (currentFilters.experience_level) {
           list = list.filter(job => {
             const exp = typeof job.experience_level === 'string' ? job.experience_level : (job.experience_level?.value || '');
-            return exp.toLowerCase() === currentFilters.experience_level.toLowerCase();
+            return exp.toLowerCase().replace(/_/g, '-') === currentFilters.experience_level.toLowerCase().replace(/_/g, '-');
           });
         }
         if (currentFilters.min_salary) {
@@ -245,7 +246,7 @@ export function JobsPage() {
     }
     if (sortKey === 'salary_asc') {
       const salA = a.salary_min || a.salary_max || 0;
-      const salB = b.salary_min || b.salary_max || 0;
+      const salB = b.salary_max || b.salary_min || 0;
       return salA - salB;
     }
     if (sortKey === 'company_asc') {
@@ -304,16 +305,12 @@ export function JobsPage() {
 
   const handleClearAll = () => {
     setSearchVal('');
-    setSearchParams(new URLSearchParams({ page: '1', pageSize: '10', sort: 'latest' }));
+    setSearchParams(new URLSearchParams({ page: '1', sort: 'latest' }));
   };
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;
     updateURLParams({ page: newPage });
-  };
-
-  const handlePageSizeChange = (e) => {
-    updateURLParams({ pageSize: e.target.value, page: 1 });
   };
 
   const handleSortChange = (e) => {
@@ -367,7 +364,7 @@ export function JobsPage() {
     return val;
   };
 
-  // Determine if any filters are active (excluding search, page, pageSize, sort)
+  // Determine if any filters are active (excluding search, page, sort)
   const activeChips = Object.entries(currentFilters).filter(([k, v]) => k !== 'search' && v);
   const isAnyFilterActive = activeChips.length > 0 || currentFilters.search;
 
@@ -504,33 +501,33 @@ export function JobsPage() {
       <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-center">
         {/* Search bar */}
         <div className="relative flex-grow flex items-center">
-          <Search className="absolute left-4 w-5 h-5 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-4 w-4.5 h-4.5 text-slate-400 pointer-events-none" />
           <input
             type="text"
             placeholder="Search by job title, company name, or location..."
-            className="w-full bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-2xl pl-12 pr-4 py-4 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm transition-all placeholder-slate-400 dark:placeholder-slate-500 font-medium"
+            className="w-full h-11 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl pl-11 pr-9 text-sm text-slate-900 dark:text-white focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20 shadow-sm transition-all placeholder-slate-400 font-normal"
             value={searchVal}
             onChange={(e) => setSearchVal(e.target.value)}
           />
           {searchVal && (
             <button 
               onClick={() => setSearchVal('')} 
-              className="absolute right-4 p-1 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-all"
+              className="absolute right-3 p-1 rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition-all"
             >
               <X className="w-4 h-4" />
             </button>
           )}
         </div>
 
-        <div className="flex items-center gap-3 justify-between md:justify-end">
+        <div className="flex items-center gap-3 justify-between md:justify-end shrink-0">
           {/* Sorting */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Sort By</span>
+          <div className="flex items-center gap-2.5 shrink-0">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider hidden sm:inline">Sort By</span>
             <select
               id="sort"
               value={sortBy}
               onChange={handleSortChange}
-              className="bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
+              className="h-11 px-4 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-bold text-slate-800 dark:text-white focus:outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 transition-all shadow-sm cursor-pointer"
             >
               {SORT_OPTIONS.map(opt => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -538,27 +535,12 @@ export function JobsPage() {
             </select>
           </div>
 
-          {/* Page Size */}
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider hidden sm:inline">Show</span>
-            <select
-              id="pageSize"
-              value={pageSize}
-              onChange={handlePageSizeChange}
-              className="bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-3 text-sm font-semibold text-slate-700 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all shadow-sm"
-            >
-              <option value="10">10 Jobs</option>
-              <option value="20">20 Jobs</option>
-              <option value="50">50 Jobs</option>
-            </select>
-          </div>
-
           <Button
             variant="secondary"
             onClick={() => setIsDrawerOpen(true)}
-            className="lg:hidden rounded-2xl border border-slate-200 dark:border-slate-800 p-4 font-semibold flex items-center justify-center gap-2 shrink-0 bg-white dark:bg-[#15161e] text-slate-700 dark:text-white"
+            className="lg:hidden h-11 rounded-xl border border-slate-200 dark:border-slate-800 px-4 font-bold flex items-center justify-center gap-2 shrink-0 bg-white dark:bg-[#15161e] text-slate-700 dark:text-white"
           >
-            <SlidersHorizontal className="w-5 h-5 text-slate-600" />
+            <SlidersHorizontal className="w-4.5 h-4.5 text-slate-600 dark:text-slate-400" />
             <span className="hidden sm:inline">Filters</span>
           </Button>
         </div>
@@ -656,8 +638,8 @@ export function JobsPage() {
                 {jobs.map((job) => {
                   const isSaved = savedJobIds.has(job.id);
                   const statusBadges = getJobStatusBadges(job);
-                  const typeLabel = typeof job.job_type === 'string' ? job.job_type : (job.job_type?.value || '');
-                  const modeLabel = typeof job.work_mode === 'string' ? job.work_mode : (job.work_mode?.value || '');
+                  const typeLabel = formatJobType(job.job_type);
+                  const modeLabel = formatWorkMode(job.work_mode);
                   
                   const slicedSkills = (job.skills || []).slice(0, 3);
                   const extraSkillsCount = Math.max(0, (job.skills || []).length - 3);
@@ -799,91 +781,48 @@ export function JobsPage() {
               </div>
 
               {/* Pagination Controls Footer Container */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-100">
-                
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 border-t border-slate-200/80 dark:border-slate-800">
                 {/* Info summary text */}
-                <div className="text-sm font-semibold text-slate-400 select-none">
-                  Showing <span className="text-slate-700">{startRecord}</span>–<span className="text-slate-700">{endRecord}</span> of <span className="text-slate-700 font-bold">{totalRecords}</span> jobs
+                <div className="text-sm font-medium text-slate-500 dark:text-slate-400 select-none">
+                  Showing <span className="text-slate-900 dark:text-white font-bold">{startRecord}</span>–<span className="text-slate-900 dark:text-white font-bold">{endRecord}</span> of <span className="text-slate-900 dark:text-white font-bold">{totalRecords}</span> jobs
                 </div>
 
-                {/* Desktop Responsive Navigation links layout */}
-                <div className="hidden sm:flex items-center gap-1.5">
-                  <button
-                    onClick={() => handlePageChange(1)}
-                    disabled={currentPage === 1}
-                    className="p-2 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-500 shadow-sm"
-                    title="First Page"
-                  >
-                    <ChevronsLeft className="w-4 h-4" />
-                  </button>
+                {/* Pagination Controls */}
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-500 shadow-sm"
-                    title="Previous Page"
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1 shadow-sm"
                   >
                     <ChevronLeft className="w-4 h-4" />
+                    <span>Previous</span>
                   </button>
 
-                  {getPageNumbers().map(pageNum => (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`px-3.5 py-1.5 rounded-xl text-sm font-bold transition-all border ${
-                        pageNum === currentPage
-                          ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/20'
-                          : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50 hover:border-slate-200'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  ))}
+                  <div className="flex items-center gap-1">
+                    {getPageNumbers().map(pageNum => (
+                      <button
+                        key={pageNum}
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-9 h-9 rounded-xl text-xs font-bold transition-all border flex items-center justify-center ${
+                          pageNum === currentPage
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/20'
+                            : 'bg-white dark:bg-[#15161e] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+                  </div>
 
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-500 shadow-sm"
-                    title="Next Page"
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-1 shadow-sm"
                   >
+                    <span>Next</span>
                     <ChevronRight className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => handlePageChange(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className="p-2 rounded-xl border border-slate-100 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-slate-500 shadow-sm"
-                    title="Last Page"
-                  >
-                    <ChevronsRight className="w-4 h-4" />
-                  </button>
                 </div>
-
-                {/* Mobile Responsive Navigation compact layout */}
-                <div className="flex sm:hidden items-center gap-3">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="rounded-xl border border-slate-200 font-bold px-3 py-1.5"
-                  >
-                    Prev
-                  </Button>
-                  
-                  <span className="text-sm font-bold text-slate-700 bg-blue-50 border border-blue-100/30 px-3 py-1 rounded-xl">
-                    Page {currentPage} of {totalPages}
-                  </span>
-
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="rounded-xl border border-slate-200 font-bold px-3 py-1.5"
-                  >
-                    Next
-                  </Button>
-                </div>
-
               </div>
             </>
           )}

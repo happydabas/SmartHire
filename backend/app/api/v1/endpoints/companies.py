@@ -1,15 +1,17 @@
 from typing import List
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies.db import get_db
-from app.models.users import User
+from app.models.users import User, UserRole
 from app.schemas.companies import CompanyCreate, CompanyUpdate, CompanyResponse
 from app.schemas.users import UserResponse, UserStatusUpdate
 from app.schemas.jobs import JobDetailResponse
+from app.schemas.company_invitations import InvitationCreate, InvitationResponse
 from app.services.companies import CompanyService
+from app.services.company_invitations import CompanyInvitationService
 from app.services.jobs import JobService
-from app.auth.dependencies import require_company_owner, get_current_active_user
+from app.auth.dependencies import get_current_active_user
 
 router = APIRouter()
 
@@ -21,22 +23,32 @@ def get_job_service(db: AsyncSession = Depends(get_db)) -> JobService:
     """Dependency provider injecting the JobService."""
     return JobService(db)
 
+def get_invitation_service(db: AsyncSession = Depends(get_db)) -> CompanyInvitationService:
+    """Dependency provider injecting the CompanyInvitationService."""
+    return CompanyInvitationService(db)
+
 
 @router.post(
     "",
     response_model=CompanyResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Create a new company profile",
-    description="Accessible only by authenticated company owners."
+    description="Accessible by authenticated recruiters without a company or company owners."
 )
 async def create_company(
     company_in: CompanyCreate,
-    current_user: User = Depends(require_company_owner),
+    current_user: User = Depends(get_current_active_user),
     company_service: CompanyService = Depends(get_company_service)
 ) -> CompanyResponse:
     """
-    Create a new company profile.
+    Create a new company profile and associate creator as owner.
     """
+    if current_user.role not in [UserRole.RECRUITER, UserRole.COMPANY_OWNER]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only recruiters are authorized to create a company profile."
+        )
+
     created_company = await company_service.create_company(
         obj_in=company_in,
         owner_id=current_user.id
@@ -175,7 +187,7 @@ async def remove_recruiter(
     response_model=List[JobDetailResponse],
     status_code=status.HTTP_200_OK,
     summary="List all company job postings",
-    description="Accessible only by the Company Owner or Recruiters of that company. Includes OPEN, CLOSED, and DRAFT postings."
+    description="Accessible only by the Company Owner or Recruiters of that company."
 )
 async def list_company_jobs(
     company_id: int,
@@ -188,4 +200,72 @@ async def list_company_jobs(
     return await job_service.get_company_jobs(
         company_id=company_id,
         current_user=current_user
+    )
+
+# ==========================================
+# Company Invitations Endpoints
+# ==========================================
+
+@router.post(
+    "/{company_id}/invitations",
+    response_model=InvitationResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Send a recruiter invitation",
+    description="Accessible only by the Company Owner. Sends an invitation to a recruiter email."
+)
+async def create_invitation(
+    company_id: int,
+    payload: InvitationCreate,
+    current_user: User = Depends(get_current_active_user),
+    invitation_service: CompanyInvitationService = Depends(get_invitation_service)
+) -> InvitationResponse:
+    """
+    Generate and send a recruiter invitation link.
+    """
+    return await invitation_service.create_invitation(
+        company_id=company_id,
+        recruiter_email=payload.recruiter_email,
+        owner_id=current_user.id
+    )
+
+@router.get(
+    "/{company_id}/invitations",
+    response_model=List[InvitationResponse],
+    status_code=status.HTTP_200_OK,
+    summary="List company invitations",
+    description="Accessible only by the Company Owner. Returns list of invitations sent by the company."
+)
+async def list_invitations(
+    company_id: int,
+    current_user: User = Depends(get_current_active_user),
+    invitation_service: CompanyInvitationService = Depends(get_invitation_service)
+) -> List[InvitationResponse]:
+    """
+    Retrieve all invitations for the company.
+    """
+    return await invitation_service.list_company_invitations(
+        company_id=company_id,
+        owner_id=current_user.id
+    )
+
+@router.delete(
+    "/{company_id}/invitations/{invitation_id}",
+    response_model=InvitationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Cancel a pending invitation",
+    description="Accessible only by the Company Owner."
+)
+async def cancel_invitation(
+    company_id: int,
+    invitation_id: int,
+    current_user: User = Depends(get_current_active_user),
+    invitation_service: CompanyInvitationService = Depends(get_invitation_service)
+) -> InvitationResponse:
+    """
+    Cancel a pending recruiter invitation.
+    """
+    return await invitation_service.cancel_invitation(
+        company_id=company_id,
+        invitation_id=invitation_id,
+        owner_id=current_user.id
     )

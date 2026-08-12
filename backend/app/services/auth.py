@@ -30,8 +30,9 @@ class AuthService:
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-        # 1. Fetch user by email address
-        user = await self.user_repo.get_by_email(self.db, email=credentials.email)
+        # 1. Fetch user by normalized email address
+        normalized_email = credentials.email.strip().lower()
+        user = await self.user_repo.get_by_email(self.db, email=normalized_email)
         if not user:
             raise credentials_exception
             
@@ -60,6 +61,20 @@ class AuthService:
             role=user.role.value
         )
         
+        from sqlalchemy.future import select
+        from app.models.companies import Company
+        from app.models.users import UserRole
+        stmt = select(Company.id).where(Company.owner_id == user.id)
+        res = await self.db.execute(stmt)
+        owned_comp_id = res.scalar_one_or_none()
+
+        if owned_comp_id is not None:
+            user.is_owner = True
+            if not user.company_id:
+                user.company_id = owned_comp_id
+        else:
+            user.is_owner = bool(user.role == UserRole.COMPANY_OWNER)
+
         # 4. Return tokens along with basic user details
         return TokenResponse(
             access_token=access_token,

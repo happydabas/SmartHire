@@ -28,13 +28,18 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 @pytest.fixture(scope="session", autouse=True)
-async def create_test_db():
-    """Build schemas prior to starting test instances asynchronously."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+def create_test_db():
+    """Build schemas prior to starting test instances."""
+    import asyncio
+    async def init_db():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    asyncio.run(init_db())
     yield
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    async def drop_db():
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+    asyncio.run(drop_db())
 
 @pytest.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
@@ -44,10 +49,11 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await session.rollback()
 
 @pytest.fixture
-def client(db_session) -> Generator:
+def client() -> Generator:
     """Configures the TestClient instance mapping dependency overrides to mock database sessions."""
     async def override_get_db():
-        yield db_session
+        async with TestingSessionLocal() as session:
+            yield session
             
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as c:

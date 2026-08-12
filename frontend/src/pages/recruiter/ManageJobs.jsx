@@ -17,12 +17,17 @@ import {
   Building,
   RotateCcw,
   CheckCircle2,
-  FileUp
+  FileUp,
+  UserCheck,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { recruiterService } from '@/services/recruiter/recruiterService';
 import { jobService } from '@/services/jobs/jobService';
+import { companyService } from '@/services/company/companyService';
 import { formatDate } from '@/utils/formatDate';
+import { formatJobType, formatWorkMode } from '@/utils/enumFormatters';
 import { ROUTES } from '@/constants/routes';
 import { notificationService } from '@/services/notificationService';
 
@@ -354,6 +359,59 @@ export function ManageJobs() {
     }
   };
 
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+
+  // Recruiter Access Management Modal State
+  const [assignmentModalOpen, setAssignmentModalOpen] = useState(false);
+  const [selectedJobForAssignments, setSelectedJobForAssignments] = useState(null);
+  const [companyRecruiters, setCompanyRecruiters] = useState([]);
+  const [assignedRecruiterIds, setAssignedRecruiterIds] = useState([]);
+  const [recruitersLoading, setRecruitersLoading] = useState(false);
+  const [assignmentSaving, setAssignmentSaving] = useState(false);
+
+  const handleOpenAssignmentModal = async (job) => {
+    setSelectedJobForAssignments(job);
+    setAssignedRecruiterIds(job.assigned_recruiter_ids || []);
+    setAssignmentModalOpen(true);
+
+    if (user?.company_id) {
+      try {
+        setRecruitersLoading(true);
+        const data = await companyService.getRecruiters(user.company_id);
+        const list = Array.isArray(data) ? data : (data.recruiters || []);
+        setCompanyRecruiters(list);
+      } catch (err) {
+        console.error('Failed to load recruiters:', err);
+      } finally {
+        setRecruitersLoading(false);
+      }
+    }
+  };
+
+  const toggleModalRecruiter = (recruiterId) => {
+    setAssignedRecruiterIds(prev =>
+      prev.includes(recruiterId)
+        ? prev.filter(id => id !== recruiterId)
+        : [...prev, recruiterId]
+    );
+  };
+
+  const handleSaveAssignments = async () => {
+    if (!selectedJobForAssignments) return;
+    try {
+      setAssignmentSaving(true);
+      await jobService.updateJobAssignments(selectedJobForAssignments.id, assignedRecruiterIds);
+      triggerToast('Recruiter access updated successfully!', 'success');
+      setAssignmentModalOpen(false);
+      fetchJobs(true);
+    } catch (err) {
+      console.error(err);
+      triggerToast('Failed to update recruiter access.', 'error');
+    } finally {
+      setAssignmentSaving(false);
+    }
+  };
+
   // Build array of actions depending on listing status
   const getAvailableActions = (job) => {
     const actions = [];
@@ -365,6 +423,15 @@ export function ManageJobs() {
       icon: Eye,
       onClick: () => navigate(`/jobs/${job.id}`)
     });
+
+    // Manage Recruiter Access (Company Owner only)
+    if (isOwner) {
+      actions.push({
+        label: 'Manage Recruiter Access',
+        icon: UserCheck,
+        onClick: () => handleOpenAssignmentModal(job)
+      });
+    }
 
     // 2. Edit Action (Draft or Active status)
     if (status === 'draft' || status === 'open') {
@@ -444,7 +511,7 @@ export function ManageJobs() {
       key: 'job_type',
       render: (row) => (
         <span className="text-xs font-semibold text-slate-600 bg-slate-50 border border-slate-100 px-2 py-1 rounded-lg">
-          {row.job_type}
+          {formatJobType(row.job_type)}
         </span>
       )
     },
@@ -452,7 +519,7 @@ export function ManageJobs() {
       header: 'Work Mode',
       key: 'work_mode',
       render: (row) => (
-        <span className="text-xs font-semibold text-slate-600">{row.work_mode}</span>
+        <span className="text-xs font-semibold text-slate-600">{formatWorkMode(row.work_mode)}</span>
       )
     },
     {
@@ -582,11 +649,11 @@ export function ManageJobs() {
         <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
           <div>
             <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Job Type</span>
-            <span className="text-slate-700">{job.job_type}</span>
+            <span className="text-slate-700">{formatJobType(job.job_type)}</span>
           </div>
           <div>
             <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Work Mode</span>
-            <span className="text-slate-700">{job.work_mode}</span>
+            <span className="text-slate-700">{formatWorkMode(job.work_mode)}</span>
           </div>
           <div>
             <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Applications</span>
@@ -650,15 +717,17 @@ export function ManageJobs() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Manage Job Listings</h1>
           <p className="text-slate-500 text-sm mt-1">Review active, draft, and closed jobs and inspect applicant rates.</p>
         </div>
-        <Button
-          variant="primary"
-          size="md"
-          onClick={() => navigate(ROUTES.RECRUITER_CREATE_JOB || '/recruiter/jobs/create')}
-          className="rounded-xl shadow-lg flex items-center justify-center gap-2 font-bold shrink-0 self-start sm:self-auto"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Post New Job</span>
-        </Button>
+        {isOwner && (
+          <Button
+            variant="primary"
+            size="md"
+            onClick={() => navigate(ROUTES.RECRUITER_CREATE_JOB || '/recruiter/jobs/create')}
+            className="rounded-xl shadow-lg flex items-center justify-center gap-2 font-bold shrink-0 self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Post New Job</span>
+          </Button>
+        )}
       </div>
 
       {/* Error state */}
@@ -808,6 +877,98 @@ export function ManageJobs() {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {/* Manage Recruiter Access Modal */}
+      {assignmentModalOpen && selectedJobForAssignments && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <Card className="max-w-md w-full p-6 sm:p-8 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 dark:text-white text-base">Manage Recruiter Access</h3>
+                  <p className="text-xs text-slate-400 font-medium truncate max-w-[240px]">{selectedJobForAssignments.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAssignmentModalOpen(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {recruitersLoading ? (
+              <div className="py-8 text-center flex items-center justify-center gap-2 text-slate-400">
+                <Spinner size="md" />
+                <span className="text-xs font-semibold">Loading company recruiters...</span>
+              </div>
+            ) : companyRecruiters.length === 0 ? (
+              <p className="text-xs text-slate-500 text-center py-6">No recruiters found in your company profile.</p>
+            ) : (
+              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                {companyRecruiters.map(recruiter => {
+                  const isAssigned = assignedRecruiterIds.includes(recruiter.id);
+                  return (
+                    <div
+                      key={recruiter.id}
+                      onClick={() => toggleModalRecruiter(recruiter.id)}
+                      className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
+                        isAssigned
+                          ? 'bg-blue-50/60 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-900 dark:text-blue-100'
+                          : 'bg-slate-50/40 dark:bg-slate-800/30 border-slate-150 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                          isAssigned ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                        }`}>
+                          {recruiter.name?.charAt(0) || 'R'}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">{recruiter.name}</p>
+                          <p className="text-[11px] text-slate-400 font-medium">{recruiter.email}</p>
+                        </div>
+                      </div>
+                      <div>
+                        {isAssigned ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-300 dark:text-slate-600 shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <Button
+                variant="secondary"
+                size="md"
+                onClick={() => setAssignmentModalOpen(false)}
+                disabled={assignmentSaving}
+                className="rounded-xl font-bold"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSaveAssignments}
+                isLoading={assignmentSaving}
+                disabled={assignmentSaving}
+                className="rounded-xl font-bold"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

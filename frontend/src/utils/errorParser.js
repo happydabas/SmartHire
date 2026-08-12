@@ -37,10 +37,16 @@ export const extractErrorMessage = (error) => {
       return data.detail;
     }
 
-    // 3. Nested error object: { "error": { "message": "..." } }
+    // 3. Nested error object: { "error": { "message": "...", "details": [...] } }
     if (data.error && typeof data.error === 'object') {
       const errObj = data.error;
-      if (errObj.message && typeof errObj.message === 'string') {
+      if (errObj.details && Array.isArray(errObj.details) && errObj.details.length > 0) {
+        return errObj.details.map(err => {
+          const field = err.loc && Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : '';
+          return field ? `${field}: ${err.msg}` : (err.msg || JSON.stringify(err));
+        }).join('; ');
+      }
+      if (errObj.message && typeof errObj.message === 'string' && errObj.message !== 'Inbound request validation failed.') {
         return errObj.message;
       }
       if (errObj.detail && typeof errObj.detail === 'string') {
@@ -48,6 +54,9 @@ export const extractErrorMessage = (error) => {
       }
       if (errObj.msg && typeof errObj.msg === 'string') {
         return errObj.msg;
+      }
+      if (errObj.message && typeof errObj.message === 'string') {
+        return errObj.message;
       }
     }
 
@@ -120,8 +129,9 @@ export const mapLoginError = (msg) => {
 
 export const parseFormErrors = (error) => {
   if (!error) return null;
-  if (error.response?.status === 422 && error.response?.data?.detail) {
-    const details = error.response.data.detail;
+  if (error.response?.status === 422) {
+    const data = error.response.data;
+    const details = data?.detail || data?.error?.details;
     if (Array.isArray(details)) {
       const fieldErrors = {};
       details.forEach((err) => {
@@ -130,7 +140,7 @@ export const parseFormErrors = (error) => {
           fieldErrors[field] = err.msg || 'Invalid value';
         }
       });
-      return fieldErrors;
+      return Object.keys(fieldErrors).length > 0 ? fieldErrors : null;
     }
   }
   return null;

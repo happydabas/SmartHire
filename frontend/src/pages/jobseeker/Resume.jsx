@@ -33,6 +33,7 @@ import {
   PlusCircle,
   ArrowRight,
   CheckCircle,
+  Check,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { resumeService } from '@/services/resume/resumeService';
@@ -53,27 +54,44 @@ import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Checkbox from '@/components/ui/Checkbox';
 import Badge from '@/components/ui/Badge';
+import Select from '@/components/ui/Select';
 import SearchableSelect from '@/components/ui/SearchableSelect';
 import SkillChip from '@/components/ui/SkillChip';
 import SkeletonProfile from '@/components/common/SkeletonProfile';
 import EmptyState from '@/components/common/EmptyState';
 
-// Master skills catalog
-const MASTER_SKILLS_CATALOG = [
+// Catalog of master skills categorized
+export const MASTER_SKILLS_CATALOG = [
+  // Frontend
   { id: 1, skill_name: 'React', category: 'Frontend' },
   { id: 2, skill_name: 'Angular', category: 'Frontend' },
   { id: 3, skill_name: 'Vue.js', category: 'Frontend' },
   { id: 4, skill_name: 'HTML5 & CSS3', category: 'Frontend' },
   { id: 5, skill_name: 'Tailwind CSS', category: 'Frontend' },
+  { id: 19, skill_name: 'TypeScript', category: 'Frontend' },
+  { id: 20, skill_name: 'Next.js', category: 'Frontend' },
+  
+  // Backend
   { id: 6, skill_name: 'FastAPI', category: 'Backend' },
   { id: 7, skill_name: 'Node.js', category: 'Backend' },
   { id: 8, skill_name: 'Django', category: 'Backend' },
   { id: 9, skill_name: 'Flask', category: 'Backend' },
   { id: 10, skill_name: 'Express.js', category: 'Backend' },
+  { id: 21, skill_name: 'Python', category: 'Backend' },
+  { id: 22, skill_name: 'Java', category: 'Backend' },
+  { id: 23, skill_name: 'Go', category: 'Backend' },
+  { id: 25, skill_name: 'GraphQL', category: 'Backend' },
+  { id: 26, skill_name: 'Rust', category: 'Backend' },
+  { id: 27, skill_name: 'C++', category: 'Backend' },
+
+  // Database
   { id: 11, skill_name: 'PostgreSQL', category: 'Database' },
   { id: 12, skill_name: 'MongoDB', category: 'Database' },
   { id: 13, skill_name: 'Redis', category: 'Database' },
   { id: 14, skill_name: 'MySQL', category: 'Database' },
+  { id: 24, skill_name: 'SQLite', category: 'Database' },
+
+  // DevOps & Cloud
   { id: 15, skill_name: 'Docker', category: 'DevOps' },
   { id: 16, skill_name: 'Kubernetes', category: 'DevOps' },
   { id: 17, skill_name: 'AWS', category: 'DevOps' },
@@ -144,6 +162,8 @@ export function ResumePage() {
   const [isDeleteResumeModalOpen, setIsDeleteResumeModalOpen] = useState(false);
 
   // Modals state managers
+  const [isViewResumeModalOpen, setIsViewResumeModalOpen] = useState(false);
+  const [pdfViewUrl, setPdfViewUrl] = useState(null);
   const [isPersonalInfoOpen, setIsPersonalInfoOpen] = useState(false);
   const [isProfSummaryOpen, setIsProfSummaryOpen] = useState(false);
   const [isEducationOpen, setIsEducationOpen] = useState(false);
@@ -164,8 +184,47 @@ export function ResumePage() {
   const [educationForm, setEducationForm] = useState({ degree: '', field_of_study: '', institution_name: '', start_date: '', end_date: '', currently_studying: false, grade: '', description: '' });
   const [experienceForm, setExperienceForm] = useState({ job_title: '', company_name: '', employment_type: '', location: '', start_date: '', end_date: '', currently_working: false, description: '' });
   const [skillForm, setSkillForm] = useState({ skill_id: '', proficiency_level: 'Intermediate', years_of_experience: 1 });
+  const [selectedSkillIds, setSelectedSkillIds] = useState([]);
+  const [skillSearchQuery, setSkillSearchQuery] = useState('');
   const [projectForm, setProjectForm] = useState({ project_name: '', description: '', technologies_used: '', github_link: '', live_demo_link: '' });
-  const [certificationForm, setCertificationForm] = useState({ certification_name: '', organization: '', issue_date: '', expiry_date: '', credential_url: '' });
+  const [certificationForm, setCertificationForm] = useState({ certification_name: '', organization: '', certificate_pdf_url: null, file_name: '' });
+  const [certPdfFile, setCertPdfFile] = useState(null);
+  const [viewingCertRecord, setViewingCertRecord] = useState(null);
+  const [isViewCertModalOpen, setIsViewCertModalOpen] = useState(false);
+
+  // Date of Birth auto-advancing refs and helper
+  const dobDayRef = useRef(null);
+  const dobMonthRef = useRef(null);
+  const dobYearRef = useRef(null);
+  const [dobParts, setDobParts] = useState({ day: '', month: '', year: '' });
+
+  const handleDobChange = (field, value) => {
+    const cleanVal = value.replace(/\D/g, '');
+    let updated = { ...dobParts, [field]: cleanVal };
+
+    if (field === 'day') {
+      if (cleanVal.length > 2) updated.day = cleanVal.slice(0, 2);
+      if (updated.day.length === 2) {
+        dobMonthRef.current?.focus();
+      }
+    } else if (field === 'month') {
+      if (cleanVal.length > 2) updated.month = cleanVal.slice(0, 2);
+      if (updated.month.length === 2) {
+        dobYearRef.current?.focus();
+      }
+    } else if (field === 'year') {
+      if (cleanVal.length > 4) updated.year = cleanVal.slice(0, 4);
+    }
+
+    setDobParts(updated);
+
+    if (updated.year && updated.month && updated.day) {
+      const y = updated.year.padStart(4, '0');
+      const m = updated.month.padStart(2, '0');
+      const d = updated.day.padStart(2, '0');
+      setPersonalForm(prev => ({ ...prev, dob: `${y}-${m}-${d}` }));
+    }
+  };
 
   // AI Resume tools states
   const [isParserOpen, setIsParserOpen] = useState(false);
@@ -319,6 +378,20 @@ export function ResumePage() {
     }
   };
 
+  const handleViewResume = async () => {
+    try {
+      setActionLoading(true);
+      const url = await resumeService.getResumeFileUrl();
+      setPdfViewUrl(url);
+      setIsViewResumeModalOpen(true);
+    } catch (err) {
+      console.error("View resume error:", err);
+      setGlobalError("Failed to load PDF resume document.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleDeleteResume = async () => {
     try {
       setActionLoading(true);
@@ -373,35 +446,72 @@ export function ResumePage() {
     }
   };
 
+  const cleanDate = (d) => {
+    if (!d) return null;
+    const str = String(d).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    const dateObj = new Date(str);
+    if (isNaN(dateObj.getTime())) return null;
+    return dateObj.toISOString().split('T')[0];
+  };
+
+  const saveProfileRecord = async (updatedFields) => {
+    const payload = {
+      full_name: (updatedFields.full_name !== undefined ? updatedFields.full_name : (profileData?.full_name || user?.name || '')).trim() || 'Job Seeker',
+      phone_number: (updatedFields.phone_number !== undefined ? updatedFields.phone_number : (profileData?.phone_number || profileData?.phone || '')).trim() || '+15550192834',
+      date_of_birth: updatedFields.date_of_birth || profileData?.date_of_birth || profileData?.dob || '2000-01-01',
+      gender: updatedFields.gender || profileData?.gender || 'Other',
+      address: (updatedFields.address !== undefined ? updatedFields.address : (profileData?.address || '')).trim() || 'Primary Residence',
+      city: (updatedFields.city !== undefined ? updatedFields.city : (profileData?.city || '')).trim() || 'City',
+      state: (updatedFields.state !== undefined ? updatedFields.state : (profileData?.state || '')).trim() || 'State',
+      country: (updatedFields.country !== undefined ? updatedFields.country : (profileData?.country || '')).trim() || 'Country',
+      linkedin_url: profileData?.linkedin_url || null,
+      github_url: profileData?.github_url || null,
+      portfolio_url: profileData?.portfolio_url || null,
+      professional_summary: updatedFields.professional_summary !== undefined ? updatedFields.professional_summary : (profileData?.professional_summary || profileData?.bio || null),
+      profile_photo_url: profileData?.profile_photo_url || null,
+    };
+
+    try {
+      return await profileService.updateProfile(payload);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        return await profileService.createProfile(payload);
+      }
+      throw err;
+    }
+  };
+
   // Form submit handles
   const handlePersonalSubmit = async (e) => {
     e.preventDefault();
     try {
       setActionLoading(true);
       setGlobalError(null);
-      const payload = {
-        phone: personalForm.phone.trim(),
-        dob: cleanDate(personalForm.dob),
-        gender: personalForm.gender,
-        address: personalForm.address.trim(),
-        city: personalForm.city.trim(),
-        state: personalForm.state.trim(),
-        country: personalForm.country.trim(),
-        headline: personalForm.headline.trim(),
-        bio: profileData?.bio || ''
-      };
 
-      if (profileData) {
-        await profileService.updateProfile(payload);
-        setGlobalSuccess('Personal Information updated successfully!');
-      } else {
-        await profileService.createProfile(payload);
-        setGlobalSuccess('Personal Profile created successfully!');
+      const dobVal = cleanDate(personalForm.dob);
+
+      await saveProfileRecord({
+        full_name: personalForm.name.trim() || user?.name,
+        phone_number: personalForm.phone.trim(),
+        date_of_birth: dobVal || '2000-01-01',
+        gender: personalForm.gender || 'Other',
+        address: personalForm.address.trim() || 'Primary Residence',
+        city: personalForm.city.trim() || 'City',
+        state: personalForm.state.trim() || 'State',
+        country: personalForm.country.trim() || 'Country',
+      });
+
+      if (personalForm.headline) {
+        localStorage.setItem(`profile_headline_${user?.id}`, personalForm.headline.trim());
       }
+
+      setGlobalSuccess('Personal Information updated successfully!');
       setIsPersonalInfoOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to update personal information details.');
+      await fetchAllData();
+    } catch (err) {
+      console.error('Personal info save error:', err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to update personal information details.');
     } finally {
       setActionLoading(false);
     }
@@ -412,29 +522,21 @@ export function ResumePage() {
     try {
       setActionLoading(true);
       setGlobalError(null);
-      const payload = {
-        phone: profileData?.phone || '',
-        dob: profileData?.dob || null,
-        gender: profileData?.gender || 'Other',
-        address: profileData?.address || '',
-        city: profileData?.city || '',
-        state: profileData?.state || '',
-        country: profileData?.country || '',
-        headline: summaryForm.headline.trim(),
-        bio: summaryForm.bio.trim()
-      };
 
-      if (profileData) {
-        await profileService.updateProfile(payload);
-        setGlobalSuccess('Professional Summary updated successfully!');
-      } else {
-        await profileService.createProfile(payload);
-        setGlobalSuccess('Professional Summary initialized successfully!');
+      await saveProfileRecord({
+        professional_summary: summaryForm.bio.trim()
+      });
+
+      if (summaryForm.headline) {
+        localStorage.setItem(`profile_headline_${user?.id}`, summaryForm.headline.trim());
       }
+
+      setGlobalSuccess('Professional Summary updated successfully!');
       setIsProfSummaryOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to save summary credentials.');
+      await fetchAllData();
+    } catch (err) {
+      console.error('Prof summary save error:', err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to save summary credentials.');
     } finally {
       setActionLoading(false);
     }
@@ -476,9 +578,10 @@ export function ResumePage() {
         setGlobalSuccess('Education credential added!');
       }
       setIsEducationOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to save education credential.');
+      await fetchAllData();
+    } catch (err) {
+      console.error("Education save error:", err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to save education credential.');
     } finally {
       setActionLoading(false);
     }
@@ -520,40 +623,45 @@ export function ResumePage() {
         setGlobalSuccess('Work experience added!');
       }
       setIsExperienceOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to save experience details.');
+      await fetchAllData();
+    } catch (err) {
+      console.error("Experience save error:", err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to save experience details.');
     } finally {
       setActionLoading(false);
     }
   };
 
+  const handleToggleSkillSelection = (skillId) => {
+    setSelectedSkillIds(prev => 
+      prev.includes(skillId) ? prev.filter(id => id !== skillId) : [...prev, skillId]
+    );
+  };
+
   const handleSkillSubmit = async (e) => {
     e.preventDefault();
-    if (!skillForm.skill_id) {
-      setFieldErrors({ skill_id: 'Please select a skill' });
-      return;
-    }
-    if (!editingId && skillsRecords.some(s => s.id === Number(skillForm.skill_id))) {
-      setFieldErrors({ skill_id: 'Skill is already associated with your profile' });
-      return;
-    }
-
     try {
       setActionLoading(true);
-      const skillId = Number(skillForm.skill_id);
-      if (!editingId) {
-        await skillsService.addSkill(skillId);
+      setGlobalError(null);
+
+      const existingIds = skillsRecords.map(s => s.id);
+      const toAdd = selectedSkillIds.filter(id => !existingIds.includes(id));
+      const toRemove = existingIds.filter(id => !selectedSkillIds.includes(id));
+
+      if (toAdd.length > 0) {
+        await skillsService.addSkill(toAdd);
       }
-      localStorage.setItem(`skill_details_${user?.id}_${skillId}`, JSON.stringify({
-        proficiency_level: skillForm.proficiency_level,
-        years_of_experience: Number(skillForm.years_of_experience)
-      }));
-      setGlobalSuccess(editingId ? 'Skill details updated!' : 'Skill added to profile!');
+
+      if (toRemove.length > 0) {
+        await Promise.all(toRemove.map(id => skillsService.deleteSkill(id)));
+      }
+
+      setGlobalSuccess('Profile skills updated successfully!');
       setIsSkillOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to associate catalog skill.');
+      await fetchAllData();
+    } catch (err) {
+      console.error("Skill save error:", err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to update profile skills.');
     } finally {
       setActionLoading(false);
     }
@@ -584,22 +692,58 @@ export function ResumePage() {
         setGlobalSuccess('Portfolio project added!');
       }
       setIsProjectOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to save project details.');
+      await fetchAllData();
+    } catch (err) {
+      console.error("Project save error:", err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to save project details.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleCertificationSubmit = async (e) => {
-    e.preventDefault();
-    if (!certificationForm.certification_name.trim()) {
-      setFieldErrors({ certification_name: 'Name is required' });
+  const handleCertFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setFieldErrors(prev => ({ ...prev, cert_file: 'Please upload a valid PDF document.' }));
       return;
     }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFieldErrors(prev => ({ ...prev, cert_file: 'PDF file size must be less than 5MB.' }));
+      return;
+    }
+
+    setFieldErrors(prev => ({ ...prev, cert_file: null }));
+    setCertPdfFile(file);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCertificationForm(prev => ({
+        ...prev,
+        certificate_pdf_url: reader.result,
+        file_name: file.name
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCertificationSubmit = async (e) => {
+    e.preventDefault();
+    const errors = {};
+    if (!certificationForm.certification_name.trim()) {
+      errors.certification_name = 'Certification name is required';
+    }
     if (!certificationForm.organization.trim()) {
-      setFieldErrors({ organization: 'Issuer is required' });
+      errors.organization = 'Organization / Issuer is required';
+    }
+    if (!certificationForm.certificate_pdf_url && !editingId) {
+      errors.cert_file = 'Please upload a certificate PDF file';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
       return;
     }
 
@@ -608,22 +752,22 @@ export function ResumePage() {
       const payload = {
         certification_name: certificationForm.certification_name.trim(),
         organization: certificationForm.organization.trim(),
-        issue_date: certificationForm.issue_date || null,
-        expiry_date: certificationForm.expiry_date || null,
-        credential_url: certificationForm.credential_url.trim()
+        certificate_pdf_url: certificationForm.certificate_pdf_url,
+        file_name: certificationForm.file_name || 'Certificate.pdf'
       };
 
       if (editingId) {
         await certificationService.updateCertification(user?.id, editingId, payload);
-        setGlobalSuccess('Certification credential updated!');
+        setGlobalSuccess('Certification updated successfully!');
       } else {
         await certificationService.createCertification(user?.id, payload);
-        setGlobalSuccess('Certification added to profile!');
+        setGlobalSuccess('Certification added successfully!');
       }
       setIsCertificationOpen(false);
-      fetchAllData();
-    } catch {
-      setGlobalError('Failed to save certification details.');
+      await fetchAllData();
+    } catch (err) {
+      console.error("Certification save error:", err);
+      setGlobalError(extractErrorMessage(err) || 'Failed to save certification details.');
     } finally {
       setActionLoading(false);
     }
@@ -631,16 +775,26 @@ export function ResumePage() {
 
   // Forms open helpers
   const openPersonalEdit = () => {
+    const rawDob = profileData?.date_of_birth || profileData?.dob || '';
+    let day = '', month = '', year = '';
+    if (rawDob) {
+      const parts = rawDob.split('-');
+      if (parts.length === 3) {
+        year = parts[0];
+        month = parts[1];
+        day = parts[2];
+      }
+    }
+    setDobParts({ day, month, year });
     setPersonalForm({
-      name: user?.name || '',
-      phone: profileData?.phone || '',
-      dob: profileData?.dob || '',
+      name: profileData?.full_name || user?.name || '',
+      phone: profileData?.phone_number || profileData?.phone || '',
+      dob: rawDob,
       gender: profileData?.gender || 'Other',
       address: profileData?.address || '',
       city: profileData?.city || '',
       state: profileData?.state || '',
-      country: profileData?.country || '',
-      headline: profileData?.headline || ''
+      country: profileData?.country || ''
     });
     setFieldErrors({});
     setIsPersonalInfoOpen(true);
@@ -701,9 +855,9 @@ export function ResumePage() {
   };
 
   const openSkillAdd = () => {
-    setEditingId(null);
-    setSkillForm({ skill_id: '', proficiency_level: 'Intermediate', years_of_experience: 1 });
-    setFieldErrors({});
+    const currentIds = skillsRecords.map(s => s.id);
+    setSelectedSkillIds(currentIds);
+    setSkillSearchQuery('');
     setIsSkillOpen(true);
   };
 
@@ -740,22 +894,28 @@ export function ResumePage() {
 
   const openCertificationAdd = () => {
     setEditingId(null);
-    setCertificationForm({ certification_name: '', organization: '', issue_date: '', expiry_date: '', credential_url: '' });
+    setCertPdfFile(null);
+    setCertificationForm({ certification_name: '', organization: '', certificate_pdf_url: null, file_name: '' });
     setFieldErrors({});
     setIsCertificationOpen(true);
   };
 
   const openCertificationEdit = (record) => {
     setEditingId(record.id);
+    setCertPdfFile(null);
     setCertificationForm({
       certification_name: record.certification_name || '',
       organization: record.organization || '',
-      issue_date: record.issue_date || '',
-      expiry_date: record.expiry_date || '',
-      credential_url: record.credential_url || ''
+      certificate_pdf_url: record.certificate_pdf_url || record.credential_url || null,
+      file_name: record.file_name || 'Certificate.pdf'
     });
     setFieldErrors({});
     setIsCertificationOpen(true);
+  };
+
+  const handleViewCertificate = (cert) => {
+    setViewingCertRecord(cert);
+    setIsViewCertModalOpen(true);
   };
 
   // Parser Actions
@@ -1019,6 +1179,9 @@ export function ResumePage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-3">
+                  <Button variant="primary" size="sm" onClick={handleViewResume} className="rounded-xl flex items-center gap-2 font-bold bg-blue-600 hover:bg-blue-700 text-white">
+                    <Eye className="w-4 h-4" /> View Resume
+                  </Button>
                   <Button variant="secondary" size="sm" onClick={handleDownloadResume} className="rounded-xl flex items-center gap-2 border border-slate-200 font-bold bg-white text-slate-700">
                     <Download className="w-4 h-4" /> Download PDF
                   </Button>
@@ -1095,37 +1258,33 @@ export function ResumePage() {
             <div className="space-y-4">
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Full Name</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{user?.name || 'Not Specified'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData?.full_name || user?.name || 'Not Specified'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Phone Number</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData.phone || 'Not Specified'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData?.phone_number || profileData?.phone || 'Not Specified'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Email Address</p>
                 <p className="text-sm font-bold text-slate-800 dark:text-white">{user?.email}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Professional Headline</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData.headline || 'Not Specified'}</p>
               </div>
             </div>
             <div className="space-y-4">
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Location / Address</p>
                 <p className="text-sm font-bold text-slate-800 dark:text-white">
-                  {profileData.address ? `${profileData.address}, ` : ''}
-                  {profileData.city || ''} {profileData.state || ''} {profileData.country || ''}
-                  {(!profileData.address && !profileData.city && !profileData.country) && 'Not Specified'}
+                  {profileData?.address ? `${profileData.address}, ` : ''}
+                  {profileData?.city || ''} {profileData?.state || ''} {profileData?.country || ''}
+                  {(!profileData?.address && !profileData?.city && !profileData?.country) && 'Not Specified'}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Date of Birth</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData.dob ? formatDate(profileData.dob) : 'Not Specified'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{(profileData?.date_of_birth || profileData?.dob) ? formatDate(profileData.date_of_birth || profileData.dob) : 'Not Specified'}</p>
               </div>
               <div>
                 <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Gender</p>
-                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData.gender || 'Not Specified'}</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">{profileData?.gender || 'Not Specified'}</p>
               </div>
             </div>
           </Card>
@@ -1146,12 +1305,18 @@ export function ResumePage() {
           </Button>
         </div>
 
-        {!profileData?.bio ? (
+        {!(profileData?.professional_summary || profileData?.bio) ? (
           <EmptyState title="No Professional Summary" description="Add a career summary highlighting your highlights and aspirations." icon={<Info className="w-12 h-12 text-slate-400" />} />
         ) : (
           <Card className="p-6 border border-slate-150/60 dark:border-slate-800 shadow-sm bg-white dark:bg-[#15161e] rounded-2xl space-y-3">
-            {profileData.headline && <h3 className="text-base font-bold text-slate-800 dark:text-white">{profileData.headline}</h3>}
-            <p className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed whitespace-pre-line">{profileData.bio}</p>
+            {(localStorage.getItem(`profile_headline_${user?.id}`) || profileData?.headline) && (
+              <h3 className="text-base font-bold text-slate-800 dark:text-white">
+                {localStorage.getItem(`profile_headline_${user?.id}`) || profileData?.headline}
+              </h3>
+            )}
+            <p className="text-sm text-slate-600 dark:text-slate-350 leading-relaxed whitespace-pre-line">
+              {profileData?.professional_summary || profileData?.bio}
+            </p>
           </Card>
         )}
       </div>
@@ -1176,10 +1341,17 @@ export function ResumePage() {
           <div className="space-y-6">
             {Object.keys(skillsByCategory).map(category => (
               <div key={category} className="space-y-3">
-                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider pl-1">{category} ({skillsByCategory[category].length})</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <h3 className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider pl-1 flex items-center gap-2">
+                  <span>{category}</span>
+                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-full text-[10px]">
+                    {skillsByCategory[category].length}
+                  </span>
+                </h3>
+                <div className="flex flex-wrap gap-2.5">
                   {skillsByCategory[category].map(skill => (
-                    <SkillChip key={skill.id} skill={skill} onEdit={openSkillEdit} onDelete={(id) => handleOpenDeleteConfirm('skill', id)} />
+                    <div key={skill.id} className="inline-flex items-center px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-sm font-semibold text-slate-800 dark:text-slate-200">
+                      <span>{skill.skill_name}</span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1354,17 +1526,22 @@ export function ResumePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {certificationsRecords.map(cert => (
               <Card key={cert.id} className="p-5 border border-slate-150/60 dark:border-slate-800 hover:shadow-md bg-white dark:bg-[#15161e] rounded-2xl flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">{cert.certification_name}</h3>
-                  <p className="text-xs text-slate-500 font-semibold">{cert.organization}</p>
-                  <p className="text-[10px] text-slate-405 dark:text-slate-400 pt-1">
-                    Issued: {cert.issue_date ? formatDate(cert.issue_date) : 'N/A'}
-                    {cert.expiry_date ? ` — Expires: ${formatDate(cert.expiry_date)}` : ''}
-                  </p>
-                  {cert.credential_url && (
-                    <a href={cert.credential_url} target="_blank" rel="noreferrer" className="inline-block text-[10px] text-blue-600 font-bold hover:underline pt-2">Verify Credential</a>
-                  )}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white">{cert.certification_name}</h3>
+                    <p className="text-xs text-slate-500 font-semibold">{cert.organization}</p>
+                  </div>
+                  
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleViewCertificate(cert)}
+                    className="rounded-xl text-xs font-bold flex items-center gap-1.5 border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-blue-600 dark:text-blue-400"
+                  >
+                    <Eye className="w-3.5 h-3.5" /> View Certificate
+                  </Button>
                 </div>
+
                 <div className="flex gap-2">
                   <button onClick={() => openCertificationEdit(cert)} className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Edit"><Edit2 className="w-3.5 h-3.5" /></button>
                   <button onClick={() => handleOpenDeleteConfirm('certification', cert.id)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
@@ -1430,6 +1607,65 @@ export function ResumePage() {
 
       {/* ─── MODALS DIALOGS ────────────────────────────────────────────────── */}
 
+      {/* View Resume PDF Viewer Modal */}
+      <Modal 
+        isOpen={isViewResumeModalOpen} 
+        onClose={() => setIsViewResumeModalOpen(false)} 
+        title={resumeMetadata?.file_name || `${user?.name || 'Candidate'}_Resume.pdf`}
+        headerActions={
+          <div className="flex items-center gap-2">
+            {pdfViewUrl && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => window.open(pdfViewUrl, '_blank')} 
+                className="rounded-xl text-xs font-bold flex items-center gap-1.5 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800"
+              >
+                <Eye className="w-3.5 h-3.5" /> Fullscreen PDF
+              </Button>
+            )}
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleDownloadResume} 
+              className="rounded-xl text-xs font-bold flex items-center gap-1.5 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800"
+            >
+              <Download className="w-3.5 h-3.5" /> Download
+            </Button>
+          </div>
+        }
+        className="max-w-5xl"
+      >
+        <div className="w-full h-[75vh]">
+          {pdfViewUrl ? (
+            <object
+              data={pdfViewUrl}
+              type="application/pdf"
+              className="w-full h-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 shadow-inner overflow-hidden"
+            >
+              <embed
+                src={pdfViewUrl}
+                type="application/pdf"
+                className="w-full h-full rounded-2xl"
+              />
+              <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Your browser does not render inline PDF documents.
+                </p>
+                <Button variant="primary" onClick={() => window.open(pdfViewUrl, '_blank')}>
+                  Open PDF in New Window
+                </Button>
+              </div>
+            </object>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full space-y-3">
+              <Spinner className="w-8 h-8 text-blue-600 animate-spin" />
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Loading PDF document viewer...</p>
+            </div>
+          )}
+        </div>
+      </Modal>
+
       {/* Generic Delete Modal */}
       <Modal isOpen={isDeleteConfirmOpen} onClose={() => setIsDeleteConfirmOpen(false)} title="Confirm Deletion">
         <div className="space-y-4">
@@ -1460,19 +1696,55 @@ export function ResumePage() {
             <Input label="Phone Number" id="phone" value={personalForm.phone} onChange={(e) => setPersonalForm({...personalForm, phone: e.target.value})} placeholder="e.g. +1 (555) 019-2834" disabled={actionLoading} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input label="Date of Birth" id="dob" type="date" value={personalForm.dob} onChange={(e) => setPersonalForm({...personalForm, dob: e.target.value})} disabled={actionLoading} />
             <div className="space-y-1">
-              <label htmlFor="gender" className="block text-sm font-semibold text-slate-700">Gender</label>
-              <select id="gender" value={personalForm.gender} onChange={(e) => setPersonalForm({...personalForm, gender: e.target.value})} disabled={actionLoading} className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none">
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Non-binary">Non-binary</option>
-                <option value="Other">Other</option>
-                <option value="Prefer not to say">Prefer not to say</option>
-              </select>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">Date of Birth</label>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={dobDayRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={dobParts.day}
+                  onChange={(e) => handleDobChange('day', e.target.value)}
+                  placeholder="DD"
+                  disabled={actionLoading}
+                  className="w-16 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] px-3 py-3 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none"
+                />
+                <span className="text-slate-400 font-bold">/</span>
+                <input
+                  ref={dobMonthRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={2}
+                  value={dobParts.month}
+                  onChange={(e) => handleDobChange('month', e.target.value)}
+                  placeholder="MM"
+                  disabled={actionLoading}
+                  className="w-16 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] px-3 py-3 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none"
+                />
+                <span className="text-slate-400 font-bold">/</span>
+                <input
+                  ref={dobYearRef}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={4}
+                  value={dobParts.year}
+                  onChange={(e) => handleDobChange('year', e.target.value)}
+                  placeholder="YYYY"
+                  disabled={actionLoading}
+                  className="w-24 text-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] px-3 py-3 text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
+            <Select
+              label="Gender"
+              id="gender"
+              value={personalForm.gender}
+              onChange={(e) => setPersonalForm({...personalForm, gender: e.target.value})}
+              options={['Male', 'Female', 'Non-binary', 'Other', 'Prefer not to say']}
+              disabled={actionLoading}
+            />
           </div>
-          <Input label="Professional Headline" id="headline" value={personalForm.headline} onChange={(e) => setPersonalForm({...personalForm, headline: e.target.value})} placeholder="e.g. Senior Frontend Architect / Product Manager" disabled={actionLoading} />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <Input label="Street Address" id="address" value={personalForm.address} onChange={(e) => setPersonalForm({...personalForm, address: e.target.value})} placeholder="e.g. 100 Main St" disabled={actionLoading} />
             <Input label="City" id="city" value={personalForm.city} onChange={(e) => setPersonalForm({...personalForm, city: e.target.value})} placeholder="e.g. San Francisco" disabled={actionLoading} />
@@ -1532,17 +1804,21 @@ export function ResumePage() {
             <Input label="Company Name" id="company_name" value={experienceForm.company_name} onChange={(e) => setExperienceForm({...experienceForm, company_name: e.target.value})} error={fieldErrors.company_name} placeholder="e.g. Google LLC" disabled={actionLoading} required />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-1">
-              <label htmlFor="employment_type" className="block text-sm font-semibold text-slate-700">Employment Type</label>
-              <select id="employment_type" value={experienceForm.employment_type} onChange={(e) => setExperienceForm({...experienceForm, employment_type: e.target.value})} disabled={actionLoading} className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none">
-                <option value="">Select Employment Type</option>
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
-                <option value="Internship">Internship</option>
-                <option value="Contract">Contract</option>
-                <option value="Freelance">Freelance</option>
-              </select>
-            </div>
+            <Select
+              label="Employment Type"
+              id="employment_type"
+              value={experienceForm.employment_type}
+              onChange={(e) => setExperienceForm({...experienceForm, employment_type: e.target.value})}
+              options={[
+                { label: 'Full-time', value: 'Full-time' },
+                { label: 'Part-time', value: 'Part-time' },
+                { label: 'Internship', value: 'Internship' },
+                { label: 'Contract', value: 'Contract' },
+                { label: 'Freelance', value: 'Freelance' }
+              ]}
+              placeholder="Select Employment Type"
+              disabled={actionLoading}
+            />
             <Input label="Location (Optional)" id="location" value={experienceForm.location} onChange={(e) => setExperienceForm({...experienceForm, location: e.target.value})} placeholder="e.g. Remote / San Francisco, CA" disabled={actionLoading} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
@@ -1560,35 +1836,76 @@ export function ResumePage() {
         </form>
       </Modal>
 
-      {/* Skill Association Modal */}
-      <Modal isOpen={isSkillOpen} onClose={() => setIsSkillOpen(false)} title={editingId ? 'Edit Skill details' : 'Add Catalog Skill'} className="max-w-md">
-        <form onSubmit={handleSkillSubmit} className="space-y-4">
-          {editingId ? (
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Skill Name</label>
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm text-slate-700 font-bold">
-                {MASTER_SKILLS_CATALOG.find(s => s.id === editingId)?.skill_name}
-              </div>
-            </div>
-          ) : (
-            <SearchableSelect label="Select Master Skill" id="skill_id" options={MASTER_SKILLS_CATALOG} value={skillForm.skill_id} onChange={(e) => setSkillForm({...skillForm, skill_id: e.target.value})} error={fieldErrors.skill_id} placeholder="Search skills catalog..." disabled={actionLoading} required />
-          )}
-
-          <div className="space-y-1">
-            <label htmlFor="proficiency_level" className="block text-sm font-semibold text-slate-700">Proficiency Level</label>
-            <select id="proficiency_level" value={skillForm.proficiency_level} onChange={(e) => setSkillForm({...skillForm, proficiency_level: e.target.value})} disabled={actionLoading} className="block w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 focus:border-blue-500 focus:outline-none">
-              <option value="Beginner">Beginner</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Advanced">Advanced</option>
-              <option value="Expert">Expert</option>
-            </select>
+      {/* Multi-Select Categorized Skills Modal */}
+      <Modal isOpen={isSkillOpen} onClose={() => setIsSkillOpen(false)} title="Select Profile Skills by Category" className="max-w-3xl">
+        <form onSubmit={handleSkillSubmit} className="space-y-6">
+          <div className="relative">
+            <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
+            <input
+              type="text"
+              value={skillSearchQuery}
+              onChange={(e) => setSkillSearchQuery(e.target.value)}
+              placeholder="Search skills (e.g. React, Python, Docker)..."
+              className="w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] text-sm text-slate-800 dark:text-white focus:border-blue-500 focus:outline-none"
+            />
           </div>
 
-          <Input label="Years of Experience" id="years_of_experience" type="number" min="0" value={skillForm.years_of_experience} onChange={(e) => setSkillForm({...skillForm, years_of_experience: e.target.value})} disabled={actionLoading} required />
+          <div className="space-y-6 max-h-[55vh] overflow-y-auto pr-2">
+            {['Frontend', 'Backend', 'Database', 'DevOps'].map(cat => {
+              const catSkills = MASTER_SKILLS_CATALOG.filter(s => 
+                s.category === cat && 
+                s.skill_name.toLowerCase().includes(skillSearchQuery.toLowerCase())
+              );
+              if (catSkills.length === 0) return null;
 
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
-            <Button variant="secondary" size="sm" onClick={() => setIsSkillOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">{editingId ? 'Save Changes' : 'Associate Skill'}</Button>
+              return (
+                <div key={cat} className="space-y-3">
+                  <div className="flex items-center gap-2 pb-1 border-b border-slate-100 dark:border-slate-800/80">
+                    <h4 className="text-xs font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {cat}
+                    </h4>
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-full">
+                      {catSkills.filter(s => selectedSkillIds.includes(s.id)).length} selected
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2.5">
+                    {catSkills.map(skill => {
+                      const isSelected = selectedSkillIds.includes(skill.id);
+                      return (
+                        <button
+                          key={skill.id}
+                          type="button"
+                          onClick={() => handleToggleSkillSelection(skill.id)}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-[1.02]'
+                              : 'bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-500'
+                          }`}
+                        >
+                          {isSelected && <Check className="w-4 h-4 text-white shrink-0" />}
+                          <span>{skill.skill_name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 pt-4">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              {selectedSkillIds.length} skill{selectedSkillIds.length === 1 ? '' : 's'} selected
+            </span>
+            <div className="flex items-center gap-3">
+              <Button variant="secondary" size="sm" onClick={() => setIsSkillOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">
+                Cancel
+              </Button>
+              <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">
+                Save Skills Selection
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1610,23 +1927,114 @@ export function ResumePage() {
         </form>
       </Modal>
 
-      {/* Certification Modal */}
-      <Modal isOpen={isCertificationOpen} onClose={() => setIsCertificationOpen(false)} title={editingId ? 'Edit Certification' : 'Add Certification'} className="max-w-2xl">
-        <form onSubmit={handleCertificationSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input label="Certification Name" id="certification_name" value={certificationForm.certification_name} onChange={(e) => setCertificationForm({...certificationForm, certification_name: e.target.value})} error={fieldErrors.certification_name} placeholder="e.g. AWS Certified Solutions Architect" disabled={actionLoading} required />
-            <Input label="Organization / Issuer" id="organization" value={certificationForm.organization} onChange={(e) => setCertificationForm({...certificationForm, organization: e.target.value})} error={fieldErrors.organization} placeholder="e.g. Amazon Web Services" disabled={actionLoading} required />
+      {/* Certification Add/Edit Modal */}
+      <Modal isOpen={isCertificationOpen} onClose={() => setIsCertificationOpen(false)} title={editingId ? 'Edit Certification' : 'Add Certification'} className="max-w-xl">
+        <form onSubmit={handleCertificationSubmit} className="space-y-5">
+          <Input 
+            label="Certification Name" 
+            id="certification_name" 
+            value={certificationForm.certification_name} 
+            onChange={(e) => setCertificationForm({...certificationForm, certification_name: e.target.value})} 
+            error={fieldErrors.certification_name} 
+            placeholder="e.g. AWS Certified Solutions Architect" 
+            disabled={actionLoading} 
+            required 
+          />
+          <Input 
+            label="Organization / Issuer" 
+            id="organization" 
+            value={certificationForm.organization} 
+            onChange={(e) => setCertificationForm({...certificationForm, organization: e.target.value})} 
+            error={fieldErrors.organization} 
+            placeholder="e.g. Amazon Web Services" 
+            disabled={actionLoading} 
+            required 
+          />
+
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Upload Certificate PDF <span className="text-red-500">*</span>
+            </label>
+            
+            <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 bg-slate-50/50 dark:bg-slate-900/30 hover:border-blue-500 transition-colors">
+              <FileText className="w-10 h-10 text-blue-500" />
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-white">
+                  {certificationForm.file_name ? certificationForm.file_name : 'Choose Certificate PDF File'}
+                </p>
+                <p className="text-xs text-slate-400">PDF format up to 5MB</p>
+              </div>
+
+              <label className="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all shadow-md">
+                <span>{certificationForm.file_name ? 'Change PDF File' : 'Browse PDF'}</span>
+                <input 
+                  type="file" 
+                  accept="application/pdf" 
+                  onChange={handleCertFileSelect} 
+                  className="hidden" 
+                  disabled={actionLoading} 
+                />
+              </label>
+            </div>
+            {fieldErrors.cert_file && (
+              <p className="text-xs text-red-500 font-semibold">{fieldErrors.cert_file}</p>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <Input label="Issue Date" id="issue_date" type="date" value={certificationForm.issue_date} onChange={(e) => setCertificationForm({...certificationForm, issue_date: e.target.value})} disabled={actionLoading} />
-            <Input label="Expiration Date (Optional)" id="expiry_date" type="date" value={certificationForm.expiry_date} onChange={(e) => setCertificationForm({...certificationForm, expiry_date: e.target.value})} disabled={actionLoading} />
-          </div>
-          <Input label="Verification Credential URL" id="credential_url" value={certificationForm.credential_url} onChange={(e) => setCertificationForm({...certificationForm, credential_url: e.target.value})} placeholder="e.g. https://aws.amazon.com/verify/..." disabled={actionLoading} />
-          <div className="flex justify-end gap-3 border-t border-slate-100 pt-4">
+
+          <div className="flex justify-end gap-3 border-t border-slate-100 dark:border-slate-800 pt-4">
             <Button variant="secondary" size="sm" onClick={() => setIsCertificationOpen(false)} disabled={actionLoading} className="rounded-xl font-bold">Cancel</Button>
-            <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">Confirm Credential</Button>
+            <Button type="submit" variant="primary" size="sm" isLoading={actionLoading} disabled={actionLoading} className="rounded-xl font-bold px-6">Save Certification</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* View Certificate PDF Modal */}
+      <Modal 
+        isOpen={isViewCertModalOpen} 
+        onClose={() => setIsViewCertModalOpen(false)} 
+        title={viewingCertRecord?.certification_name || 'Certificate Document View'} 
+        headerActions={
+          viewingCertRecord?.certificate_pdf_url && (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => window.open(viewingCertRecord.certificate_pdf_url, '_blank')} 
+              className="rounded-xl text-xs font-bold flex items-center gap-1.5 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800"
+            >
+              <Eye className="w-3.5 h-3.5" /> Open in New Tab
+            </Button>
+          )
+        }
+        className="max-w-4xl"
+      >
+        <div className="w-full h-[70vh]">
+          {viewingCertRecord?.certificate_pdf_url ? (
+            <object
+              data={viewingCertRecord.certificate_pdf_url}
+              type="application/pdf"
+              className="w-full h-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 shadow-inner overflow-hidden"
+            >
+              <embed
+                src={viewingCertRecord.certificate_pdf_url}
+                type="application/pdf"
+                className="w-full h-full rounded-2xl"
+              />
+              <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Your browser does not render inline PDF documents.
+                </p>
+                <Button variant="primary" onClick={() => window.open(viewingCertRecord.certificate_pdf_url, '_blank')}>
+                  Open PDF in New Window
+                </Button>
+              </div>
+            </object>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full space-y-3">
+              <FileText className="w-12 h-12 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">No PDF file attached to this certification record.</p>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* AI Resume Parser Modal */}

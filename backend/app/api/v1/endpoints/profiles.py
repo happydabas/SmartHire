@@ -135,6 +135,36 @@ async def get_resume_metadata(
         current_user=current_user
     )
 
+@router.get(
+    "/resume/file",
+    status_code=status.HTTP_200_OK,
+    summary="Download or view raw resume PDF file",
+    description="Accessible only by authenticated Job Seekers. Streams the PDF file content."
+)
+async def get_resume_file(
+    current_user: User = Depends(get_current_active_user),
+    resume_service: ResumeService = Depends(get_resume_service)
+):
+    """
+    Stream the uploaded resume PDF file directly.
+    """
+    import os
+    from fastapi.responses import FileResponse
+    resume = await resume_service.get_resume_metadata(current_user=current_user)
+    if not resume.file_path or not os.path.exists(resume.file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Resume PDF file not found on disk."
+        )
+    return FileResponse(
+        path=resume.file_path,
+        media_type="application/pdf",
+        filename=resume.file_name or "resume.pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{resume.file_name or "resume.pdf"}"'
+        }
+    )
+
 @router.put(
     "/resume",
     response_model=ResumeMetadataResponse,

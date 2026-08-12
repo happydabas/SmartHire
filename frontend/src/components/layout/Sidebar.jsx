@@ -49,8 +49,8 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
       (isCollapsed && !isMobile) ? 'justify-center' : ''
     } ${
       isActive
-        ? 'bg-blue-50 text-blue-600 border-blue-100/50 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 scale-[1.01]'
-        : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/60 dark:text-white dark:hover:bg-slate-800/20'
+        ? 'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 font-semibold scale-[1.01]'
+        : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800/20'
     }`;
 
   const collapsedMode = isCollapsed && !isMobile;
@@ -149,20 +149,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
           <button
             onClick={toggleTheme}
             className={twMerge(
-              "px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-3 transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/20 w-full text-left",
+              "px-4 py-2.5 rounded-xl text-sm font-medium flex items-center gap-3 transition-all text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800/20 w-full text-left cursor-pointer",
               collapsedMode && "justify-center"
             )}
-            title={collapsedMode ? (isDarkMode ? "Light Mode" : "Dark Mode") : undefined}
+            title={collapsedMode ? (isDarkMode ? "Dark Mode" : "Light Mode") : undefined}
           >
             {isDarkMode ? (
               <>
-                <Sun className="w-4 h-4 shrink-0 text-slate-500 dark:text-white" />
-                {!collapsedMode && <span>Light Mode</span>}
+                <Moon className="w-4 h-4 shrink-0 text-blue-400" />
+                {!collapsedMode && <span>Dark Mode</span>}
               </>
             ) : (
               <>
-                <Moon className="w-4 h-4 shrink-0 text-slate-500 dark:text-white" />
-                {!collapsedMode && <span>Dark Mode</span>}
+                <Sun className="w-4 h-4 shrink-0 text-amber-500" />
+                {!collapsedMode && <span>Light Mode</span>}
               </>
             )}
           </button>

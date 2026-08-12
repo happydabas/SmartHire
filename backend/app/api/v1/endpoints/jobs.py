@@ -1,11 +1,18 @@
 from typing import List, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies.db import get_db
 from app.models.users import User, UserRole
-from app.schemas.jobs import JobCreate, JobUpdate, JobResponse, JobDetailResponse, JobPaginatedResponse
+from app.schemas.jobs import (
+    JobCreate,
+    JobUpdate,
+    JobResponse,
+    JobDetailResponse,
+    JobPaginatedResponse,
+    JobAssignmentsUpdate
+)
 from app.services.jobs import JobService
 from app.auth.dependencies import get_current_active_user
 
@@ -97,7 +104,7 @@ async def list_drafts(
     response_model=JobResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Post a new job listing",
-    description="Accessible only by authenticated Company Owners and Recruiters. Automatically associates the posting with the user's company and links required skills and pipelines."
+    description="Accessible only by authenticated Company Owners."
 )
 async def create_job(
     payload: JobCreate,
@@ -107,18 +114,68 @@ async def create_job(
     """
     Create a new job posting listing.
     """
-    if current_user.role not in [UserRole.COMPANY_OWNER, UserRole.RECRUITER]:
-        from fastapi import HTTPException
+    company_id = await job_service.get_user_company_id(current_user)
+    if not company_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Company Owners and Recruiters are authorized to create job postings."
+            detail="You must create or belong to a company before creating job postings."
         )
+
+    is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+    if not is_owner:
+        company = await job_service.company_repo.get_by_id(job_service.db, company_id=company_id)
+        if not company or company.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only Company Owners are authorized to create job postings."
+            )
         
     created_job = await job_service.create_job(
         obj_in=payload,
         current_user=current_user
     )
     return created_job
+
+@router.get(
+    "/{job_id}",
+    response_model=JobDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get job posting details by ID",
+    description="Fetches detailed information for a specific job listing. For recruiters, verifies access authorization."
+)
+async def get_job_by_id(
+    job_id: int,
+    current_user: User = Depends(get_current_active_user),
+    job_service: JobService = Depends(get_job_service)
+) -> JobDetailResponse:
+    """
+    Retrieve job details by ID while validating authorization for recruiter users.
+    """
+    if current_user.role in [UserRole.RECRUITER, UserRole.COMPANY_OWNER]:
+        return await job_service.get_job_for_user(job_id=job_id, current_user=current_user)
+    return await job_service.get_job(job_id=job_id)
+
+@router.put(
+    "/{job_id}/assignments",
+    response_model=List[int],
+    status_code=status.HTTP_200_OK,
+    summary="Manage recruiter assignments for a job",
+    description="Accessible only by the Company Owner. Assigns or unassigns recruiters to manage a specific job listing."
+)
+async def update_job_assignments(
+    job_id: int,
+    payload: JobAssignmentsUpdate,
+    current_user: User = Depends(get_current_active_user),
+    job_service: JobService = Depends(get_job_service)
+) -> List[int]:
+    """
+    Update assigned recruiter IDs for a job.
+    """
+    return await job_service.update_job_assignments(
+        job_id=job_id,
+        recruiter_ids=payload.recruiter_ids,
+        current_user=current_user
+    )
 
 @router.put(
     "/{job_id}",

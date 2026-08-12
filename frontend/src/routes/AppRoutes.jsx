@@ -33,6 +33,8 @@ const Applicants = lazy(() => import('@/pages/recruiter/Applicants'));
 const ApplicantDetails = lazy(() => import('@/pages/recruiter/ApplicantDetails'));
 const RecruiterProfile = lazy(() => import('@/pages/recruiter/Profile'));
 const RecruiterCompanySettings = lazy(() => import('@/pages/recruiter/CompanySettings'));
+const RecruiterManagement = lazy(() => import('@/pages/recruiter/RecruiterManagement'));
+const AcceptInvitation = lazy(() => import('@/pages/auth/AcceptInvitation'));
 const CompanyDashboard = lazy(() => import('@/pages/CompanyDashboard'));
 const CompanySettings = lazy(() => import('@/pages/CompanySettings'));
 const Unauthorized = lazy(() => import('@/pages/Unauthorized'));
@@ -136,7 +138,8 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         >
-          <Route element={<RoleRoute allowedRoles={[ROLES.RECRUITER]} />}>
+          {/* All Recruiter & Owner Routes — owner-only pages enforce access at the component + backend level */}
+          <Route element={<RoleRoute allowedRoles={[ROLES.RECRUITER, ROLES.COMPANY_OWNER]} />}>
             <Route path={ROUTES.RECRUITER} element={<RecruiterDashboard />} />
             <Route path={ROUTES.RECRUITER_JOBS} element={<ManageJobs />} />
             <Route path={ROUTES.RECRUITER_CREATE_JOB} element={<CreateJob />} />
@@ -144,13 +147,15 @@ function AppRoutes() {
             <Route path={ROUTES.RECRUITER_APPLICANTS} element={<Applicants />} />
             <Route path={ROUTES.RECRUITER_APPLICANT_DETAILS} element={<ApplicantDetails />} />
             <Route path={ROUTES.RECRUITER_PROFILE} element={<RecruiterProfile />} />
-            <Route path={ROUTES.RECRUITER_COMPANY_SETTINGS} element={<RecruiterCompanySettings />} />
             <Route path={ROUTES.RECRUITER_INSIGHTS} element={<HiringInsights />} />
+            <Route path="/recruiter/team" element={<RecruiterManagement />} />
+            <Route path={ROUTES.RECRUITER_COMPANY_SETTINGS} element={<RecruiterCompanySettings />} />
             <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
           </Route>
         </Route>
 
         {/* 4. Standalone Public Pages */}
+        <Route path="/invitations/accept/:token" element={<AcceptInvitation />} />
         <Route path={ROUTES.UNAUTHORIZED} element={<Unauthorized />} />
         <Route path="/404" element={<NotFound />} />
         <Route path="/500" element={<ServerError />} />

@@ -53,13 +53,46 @@ class SkillService:
                 detail="Duplicate skill IDs provided in the request payload."
             )
 
-        # 3. Check that all requested skills exist in the master registry
+        # 3. Check that all requested skills exist in the master registry; auto-seed missing catalog skills
         matched_skills = await self.skill_repo.get_by_ids(self.db, skill_ids=obj_in.skill_ids)
         if len(matched_skills) != len(obj_in.skill_ids):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="One or more specified skills do not exist in the catalog."
-            )
+            missing_ids = set(obj_in.skill_ids) - {s.id for s in matched_skills}
+            catalog_dict = {
+                1: ("React", "Frontend"),
+                2: ("Angular", "Frontend"),
+                3: ("Vue.js", "Frontend"),
+                4: ("HTML5 & CSS3", "Frontend"),
+                5: ("Tailwind CSS", "Frontend"),
+                6: ("FastAPI", "Backend"),
+                7: ("Node.js", "Backend"),
+                8: ("Django", "Backend"),
+                9: ("Flask", "Backend"),
+                10: ("Express.js", "Backend"),
+                11: ("PostgreSQL", "Database"),
+                12: ("MongoDB", "Database"),
+                13: ("Redis", "Database"),
+                14: ("MySQL", "Database"),
+                15: ("Docker", "DevOps"),
+                16: ("Kubernetes", "DevOps"),
+                17: ("AWS", "DevOps"),
+                18: ("Git & GitHub", "DevOps"),
+                19: ("TypeScript", "Frontend"),
+                20: ("Next.js", "Frontend"),
+                21: ("Python", "Backend"),
+                22: ("Java", "Backend"),
+                23: ("Go", "Backend"),
+                24: ("SQLite", "Database"),
+                25: ("GraphQL", "Backend"),
+                26: ("Rust", "Backend"),
+                27: ("C++", "Backend"),
+                28: ("System Design", "Backend"),
+            }
+            for m_id in missing_ids:
+                s_name, s_cat = catalog_dict.get(m_id, (f"Skill #{m_id}", "Technical"))
+                db_skill = Skill(id=m_id, skill_name=s_name, category=s_cat)
+                self.db.add(db_skill)
+            await self.db.commit()
+            matched_skills = await self.skill_repo.get_by_ids(self.db, skill_ids=obj_in.skill_ids)
 
         # 4. Check for already associated skills (prevent duplicates)
         resume_id = await self.get_user_resume_id(current_user.id)

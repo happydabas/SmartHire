@@ -1,6 +1,6 @@
 import os
 from typing import List, Union
-from pydantic import AnyHttpUrl, field_validator
+from pydantic import AnyHttpUrl, field_validator, Field, AliasChoices
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -13,7 +13,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        populate_by_name=True
     )
 
     # ==========================================
@@ -75,13 +76,22 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
     # ==========================================
-    # 6. Email Settings (Placeholder)
+    # 6. Email Settings & Frontend URL
     # ==========================================
-    SMTP_HOST: str = "smtp.mailtrap.io"
-    SMTP_PORT: int = 2525
-    SMTP_USER: str = "placeholder_smtp_user"
-    SMTP_PASSWORD: str = "placeholder_smtp_password"
-    EMAILS_FROM_EMAIL: str = "no-reply@smarthire.com"
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = Field(default="", validation_alias=AliasChoices("SMTP_USERNAME", "SMTP_USER"))
+    SMTP_PASSWORD: str = ""
+    EMAIL_FROM: str = Field(default="no-reply@smarthire.com", validation_alias=AliasChoices("EMAIL_FROM", "EMAILS_FROM_EMAIL"))
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    @property
+    def SMTP_USER(self) -> str:
+        return self.SMTP_USERNAME or ""
+
+    @property
+    def EMAILS_FROM_EMAIL(self) -> str:
+        return self.EMAIL_FROM
 
     # ==========================================
     # 7. File Upload Settings (Placeholder)

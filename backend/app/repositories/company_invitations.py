@@ -61,6 +61,24 @@ class CompanyInvitationRepository:
         await db.refresh(db_invitation)
         return db_invitation
 
+    async def get_by_id(self, db: AsyncSession, invitation_id: int) -> Optional[CompanyInvitation]:
+        """
+        Retrieve an invitation record matching the given ID.
+        """
+        stmt = select(CompanyInvitation).where(CompanyInvitation.id == invitation_id)
+        result = await db.execute(stmt)
+        return result.scalars().first()
+
+    async def get_by_company(self, db: AsyncSession, company_id: int) -> list[CompanyInvitation]:
+        """
+        Retrieve all invitations for a company.
+        """
+        stmt = select(CompanyInvitation).where(
+            CompanyInvitation.company_id == company_id
+        ).order_by(CompanyInvitation.created_at.desc())
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
     async def update_status(
         self,
         db: AsyncSession,

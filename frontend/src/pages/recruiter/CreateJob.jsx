@@ -15,10 +15,14 @@ import {
   MapPin,
   ListTodo,
   ShieldCheck,
-  RotateCcw
+  ShieldAlert,
+  RotateCcw,
+  AlertCircle
 } from 'lucide-react';
+import { UserCheck, CheckSquare, Square } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { jobService } from '@/services/jobs/jobService';
+import { companyService } from '@/services/company/companyService';
 import { skillsService } from '@/services/skills/skillsService';
 import { notificationService } from '@/services/notificationService';
 import { MASTER_SKILLS_CATALOG } from '@/pages/jobseeker/Skills';
@@ -94,26 +98,10 @@ export function CreateJob() {
 
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // 1. Fetch available skills list
+  // 1. Load available skills catalog
   useEffect(() => {
-    const loadSkillsCatalog = async () => {
-      try {
-        setSkillsLoading(true);
-        // Call existing skills API
-        const data = await skillsService.getSkillsList();
-        if (data && data.length > 0) {
-          setAvailableSkills(data);
-        } else {
-          setAvailableSkills(MASTER_SKILLS_CATALOG);
-        }
-      } catch (err) {
-        console.warn('Recruiter is unauthorized or skills API failed, falling back to static skills catalog.');
-        setAvailableSkills(MASTER_SKILLS_CATALOG);
-      } finally {
-        setSkillsLoading(false);
-      }
-    };
-    loadSkillsCatalog();
+    setAvailableSkills(MASTER_SKILLS_CATALOG);
+    setSkillsLoading(false);
   }, []);
 
   const handleInputChange = (e) => {
@@ -172,6 +160,46 @@ export function CreateJob() {
     return Object.keys(errors).length === 0;
   };
 
+  const [companyRecruiters, setCompanyRecruiters] = useState([]);
+  const [recruitersLoading, setRecruitersLoading] = useState(false);
+  const [selectedRecruiterIds, setSelectedRecruiterIds] = useState([]);
+
+  // Fetch company recruiters for assignment
+  useEffect(() => {
+    const loadCompanyRecruiters = async () => {
+      if (!user?.company_id) return;
+      try {
+        setRecruitersLoading(true);
+        const data = await companyService.getRecruiters(user.company_id);
+        const recruitersList = Array.isArray(data) ? data : (data.recruiters || []);
+        setCompanyRecruiters(recruitersList);
+        // Default to selecting all recruiters
+        setSelectedRecruiterIds(recruitersList.map(r => r.id));
+      } catch (err) {
+        console.error('Failed to load company recruiters:', err);
+      } finally {
+        setRecruitersLoading(false);
+      }
+    };
+    loadCompanyRecruiters();
+  }, [user?.company_id]);
+
+  const toggleRecruiter = (recruiterId) => {
+    setSelectedRecruiterIds(prev =>
+      prev.includes(recruiterId)
+        ? prev.filter(id => id !== recruiterId)
+        : [...prev, recruiterId]
+    );
+  };
+
+  const handleSelectAllRecruiters = () => {
+    if (selectedRecruiterIds.length === companyRecruiters.length) {
+      setSelectedRecruiterIds([]);
+    } else {
+      setSelectedRecruiterIds(companyRecruiters.map(r => r.id));
+    }
+  };
+
   // Submit Handler
   const handleSubmit = async (submitStatus) => {
     if (!validateForm() || submitting) {
@@ -185,28 +213,38 @@ export function CreateJob() {
 
       // Map selected skill IDs back to skill_name strings as required by JobCreate schema
       const mappedSkills = formFields.required_skills.map(skillId => {
-        const found = availableSkills.find(s => s.id === skillId);
-        return found ? found.skill_name : skillId;
-      });
+        const found = availableSkills.find(s => s.id === skillId || s.id === Number(skillId) || s.skill_name === skillId || s.label === skillId);
+        if (found) return found.skill_name || found.label || String(skillId);
+        return String(skillId);
+      }).filter(Boolean);
 
       // Find the selected pipeline stages
       const selectedPipelineObj = PIPELINE_TEMPLATES.find(p => p.id === formFields.pipeline_template_id);
       const pipelineStages = selectedPipelineObj ? selectedPipelineObj.stages : PIPELINE_TEMPLATES[3].stages;
 
       // Clean salary fields
-      const salaryMinVal = formFields.salary_min ? parseFloat(formFields.salary_min) : null;
-      const salaryMaxVal = formFields.salary_max ? parseFloat(formFields.salary_max) : null;
+      const salaryMinVal = formFields.salary_min && !isNaN(parseFloat(formFields.salary_min)) ? parseFloat(formFields.salary_min) : null;
+      const salaryMaxVal = formFields.salary_max && !isNaN(parseFloat(formFields.salary_max)) ? parseFloat(formFields.salary_max) : null;
+
+      // Format application deadline safely
+      let formattedDeadline = null;
+      if (formFields.application_deadline) {
+        const d = new Date(formFields.application_deadline);
+        if (!isNaN(d.getTime())) {
+          formattedDeadline = d.toISOString();
+        }
+      }
 
       // Structure Description (concat responsibilities/requirements/benefits if not empty)
-      let fullDescription = formFields.description;
+      let fullDescription = formFields.description.trim();
       if (formFields.responsibilities.trim()) {
-        fullDescription += `\n\n### Responsibilities\n${formFields.responsibilities}`;
+        fullDescription += `\n\n### Responsibilities\n${formFields.responsibilities.trim()}`;
       }
       if (formFields.requirements.trim()) {
-        fullDescription += `\n\n### Requirements\n${formFields.requirements}`;
+        fullDescription += `\n\n### Requirements\n${formFields.requirements.trim()}`;
       }
       if (formFields.benefits.trim()) {
-        fullDescription += `\n\n### Benefits\n${formFields.benefits}`;
+        fullDescription += `\n\n### Benefits\n${formFields.benefits.trim()}`;
       }
 
       // Build schema matching payload
@@ -220,11 +258,13 @@ export function CreateJob() {
         status: submitStatus, // 'draft' or 'open'
         salary_min: salaryMinVal,
         salary_max: salaryMaxVal,
-        application_deadline: formFields.application_deadline ? new Date(formFields.application_deadline).toISOString() : null,
+        application_deadline: formattedDeadline,
         required_skills: mappedSkills,
-        hiring_pipeline: pipelineStages
+        hiring_pipeline: pipelineStages,
+        recruiter_ids: (selectedRecruiterIds || []).map(id => Number(id)).filter(id => !isNaN(id) && id > 0)
       };
 
+      console.log('Sending job creation payload:', jobPayload);
       const createdJob = await jobService.createJob(jobPayload);
       
       triggerToast(
@@ -240,13 +280,15 @@ export function CreateJob() {
           .catch(err => console.error('Notification publishing trigger error:', err));
       }
     } catch (err) {
-      console.error('Job creation error:', err);
+      console.error('Job creation error:', err, 'Response data:', err.response?.data);
       const errorsMap = parseFormErrors(err);
+      const backendMessage = extractErrorMessage(err);
       if (errorsMap) {
         setFieldErrors(errorsMap);
+        const detailedMsg = Object.entries(errorsMap).map(([field, msg]) => `${field}: ${msg}`).join(', ');
+        setGlobalError(detailedMsg || backendMessage);
         triggerToast('Please correct validation errors first', 'error');
       } else {
-        const backendMessage = extractErrorMessage(err);
         setGlobalError(backendMessage || 'Failed to create job posting. Please check your connection and try again.');
         triggerToast(backendMessage || 'Failed to save job posting', 'error');
       }
@@ -277,6 +319,22 @@ export function CreateJob() {
     setGlobalError(null);
     setSuccessMode(false);
   };
+
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+
+  if (!isOwner) {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
+        <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
+        <p className="text-sm text-slate-500 leading-relaxed">
+          Only the Company Owner is authorized to create job postings.
+        </p>
+      </div>
+    );
+  }
 
   if (successMode) {
     return (
@@ -576,7 +634,71 @@ export function CreateJob() {
             </div>
           </Card>
 
-          {/* Card E: Status Submission Actions */}
+          {/* Card E: Assign Recruiters */}
+          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-blue-600" />
+                <h2 className="text-base font-extrabold text-slate-800 tracking-tight">E. Assign Recruiters</h2>
+              </div>
+              {companyRecruiters.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleSelectAllRecruiters}
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  {selectedRecruiterIds.length === companyRecruiters.length ? 'Deselect All' : 'Select All'}
+                </button>
+              )}
+            </div>
+
+            {recruitersLoading ? (
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 py-2">
+                <Spinner size="sm" />
+                <span>Loading recruiters...</span>
+              </div>
+            ) : companyRecruiters.length === 0 ? (
+              <p className="text-xs text-slate-400 font-medium">No recruiters found in company.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {companyRecruiters.map(recruiter => {
+                  const isSelected = selectedRecruiterIds.includes(recruiter.id);
+                  return (
+                    <div
+                      key={recruiter.id}
+                      onClick={() => toggleRecruiter(recruiter.id)}
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none ${
+                        isSelected
+                          ? 'bg-blue-50/60 border-blue-200 text-blue-900'
+                          : 'bg-slate-50/40 border-slate-150 text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
+                          isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                        }`}>
+                          {recruiter.name?.charAt(0) || 'R'}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">{recruiter.name}</p>
+                          <p className="text-[11px] text-slate-400 font-medium">{recruiter.email}</p>
+                        </div>
+                      </div>
+                      <div>
+                        {isSelected ? (
+                          <CheckSquare className="w-5 h-5 text-blue-600 shrink-0" />
+                        ) : (
+                          <Square className="w-5 h-5 text-slate-300 shrink-0" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+
+          {/* Card F: Status Submission Actions */}
           <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm relative overflow-hidden">
             <div className="absolute right-0 bottom-0 opacity-5">
               <ShieldCheck className="w-32 h-32 text-slate-800" />
@@ -584,7 +706,7 @@ export function CreateJob() {
             
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <ListTodo className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">E. Publish Status</h2>
+              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">F. Publish Status</h2>
             </div>
 
             <div className="flex flex-col gap-3">

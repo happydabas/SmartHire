@@ -58,6 +58,13 @@ export const jobService = {
     const response = await api.delete(`${API_ENDPOINTS.SAVED_JOBS.BASE}/${jobId}`);
     return response.data;
   },
+
+  updateJobAssignments: async (jobId, recruiterIds) => {
+    const response = await api.put(`${API_ENDPOINTS.JOBS.BASE}/${jobId}/assignments`, {
+      recruiter_ids: recruiterIds
+    });
+    return response.data;
+  },
 };
 
 export default jobService;

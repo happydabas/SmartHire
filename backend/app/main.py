@@ -58,6 +58,16 @@ app.add_middleware(
 # Register API Router
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
+@app.get("/", summary="Root health endpoint")
+async def root():
+    """Root endpoint welcoming users and pointing to interactive documentation."""
+    return {
+        "success": True,
+        "message": "SmartHire Backend API Service is running smoothly",
+        "docs_url": settings.DOCS_URL,
+        "version": settings.VERSION
+    }
+
 # --------------------------------------------------------------------------
 # Exception Handlers
 # --------------------------------------------------------------------------

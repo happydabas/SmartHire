@@ -159,18 +159,9 @@ export function EditJob() {
         setLoading(true);
         setGlobalError(null);
 
-        // Fetch skills list
-        let skillsCatalog = MASTER_SKILLS_CATALOG;
-        try {
-          setSkillsLoading(true);
-          const data = await skillsService.getSkillsList();
-          if (data && data.length > 0) {
-            skillsCatalog = data;
-          }
-        } catch (err) {
-          console.warn('Skills endpoint 403 or failure, falling back to static skills catalog.');
-        }
-        setAvailableSkills(skillsCatalog);
+        // Set master skills catalog
+        setAvailableSkills(MASTER_SKILLS_CATALOG);
+        setSkillsLoading(false);
 
         // Fetch Job details
         const job = await jobService.getJobDetails(id);

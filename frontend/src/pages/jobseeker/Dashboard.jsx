@@ -253,81 +253,81 @@ export function Dashboard() {
   return (
     <div className="space-y-10 max-w-7xl mx-auto animate-fadeIn pb-12">
       {/* ── Welcome Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-100 dark:border-slate-800/40 pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200/80 dark:border-slate-800/40 pb-6">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             Good morning, {user?.name?.split(' ')[0] || 'Candidate'}!
             <span className="animate-wave origin-bottom-right inline-block">👋</span>
           </h1>
-          <p className="text-slate-550 text-sm dark:text-slate-300">
+          <p className="text-slate-500 text-sm dark:text-slate-300">
             Explore opportunities and take the next step in your career.
           </p>
         </div>
         <Button
           variant="primary"
           onClick={() => navigate('/jobs')}
-          className="bg-blue-650 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-lg shadow-blue-500/10 px-6 py-4 shrink-0 flex items-center gap-1.5 transition-transform hover:scale-[1.01]"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/20 px-6 py-3.5 shrink-0 flex items-center gap-1.5 transition-transform hover:scale-[1.01]"
         >
           <span>Browse All Jobs</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4 text-white" />
         </Button>
       </div>
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Applications */}
-        <Card className="p-6 border border-slate-150/60 dark:border-slate-805 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-455 dark:text-slate-400 uppercase tracking-wider">Applications</span>
-            <div className="p-2.5 bg-blue-500/10 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 rounded-full border border-blue-500/20 shrink-0"><Briefcase className="w-4.5 h-4.5" /></div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Applications</span>
+            <div className="p-2.5 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-500/20 shrink-0"><Briefcase className="w-4.5 h-4.5" /></div>
           </div>
           <div className="space-y-0.5 mt-auto">
-            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white leading-none">{stats.totalApplications}</h3>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider mt-1">Submitted</p>
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-none">{stats.totalApplications}</h3>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mt-1">Submitted</p>
           </div>
         </Card>
 
         {/* Saved Jobs */}
-        <Card className="p-6 border border-slate-150/60 dark:border-slate-805 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-455 dark:text-slate-400 uppercase tracking-wider">Saved Jobs</span>
-            <div className="p-2.5 bg-purple-500/10 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400 rounded-full border border-purple-500/20 shrink-0"><Bookmark className="w-4.5 h-4.5" /></div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Saved Jobs</span>
+            <div className="p-2.5 bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 rounded-full border border-purple-100 dark:border-purple-500/20 shrink-0"><Bookmark className="w-4.5 h-4.5" /></div>
           </div>
           <div className="space-y-0.5 mt-auto">
-            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white leading-none">{stats.savedJobsCount}</h3>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium uppercase tracking-wider mt-1">Bookmarked</p>
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-none">{stats.savedJobsCount}</h3>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mt-1">Bookmarked</p>
           </div>
         </Card>
 
         {/* Resume Strength */}
-        <Card className="p-6 border border-slate-150/60 dark:border-slate-805 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-455 dark:text-slate-400 uppercase tracking-wider">Resume Strength</span>
-            <div className="p-2.5 bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-full border border-emerald-500/20 shrink-0"><FileText className="w-4.5 h-4.5" /></div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Resume Strength</span>
+            <div className="p-2.5 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 rounded-full border border-emerald-100 dark:border-emerald-500/20 shrink-0"><FileText className="w-4.5 h-4.5" /></div>
           </div>
           <div className="space-y-2 mt-auto">
-            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white leading-none">{stats.resumeCompletion}%</h3>
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-none">{stats.resumeCompletion}%</h3>
             <div className="w-full bg-slate-100 dark:bg-slate-800/60 h-1.5 rounded-full overflow-hidden">
               <div className="bg-emerald-500 h-full rounded-full transition-all duration-500" style={{ width: `${stats.resumeCompletion}%` }} />
             </div>
-            <button onClick={() => navigate('/resume')} className="text-[10px] font-medium text-blue-650 dark:text-blue-400 uppercase tracking-wider hover:underline text-left flex items-center gap-1.5">
+            <button onClick={() => navigate('/resume')} className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider hover:underline text-left flex items-center gap-1.5">
               <span>Improve Resume</span> <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </Card>
 
         {/* Profile Strength */}
-        <Card className="p-6 border border-slate-150/60 dark:border-slate-805 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl">
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] flex flex-col justify-between h-36 hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 rounded-2xl shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-455 dark:text-slate-400 uppercase tracking-wider">Profile Strength</span>
-            <div className="p-2.5 bg-amber-500/10 text-amber-500 dark:bg-amber-500/10 dark:text-amber-400 rounded-full border border-amber-500/20 shrink-0"><User className="w-4.5 h-4.5" /></div>
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Profile Strength</span>
+            <div className="p-2.5 bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 rounded-full border border-amber-100 dark:border-amber-500/20 shrink-0"><User className="w-4.5 h-4.5" /></div>
           </div>
           <div className="space-y-2 mt-auto">
-            <h3 className="text-3xl font-semibold text-slate-800 dark:text-white leading-none">{stats.profileCompletion}%</h3>
+            <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white leading-none">{stats.profileCompletion}%</h3>
             <div className="w-full bg-slate-100 dark:bg-slate-800/60 h-1.5 rounded-full overflow-hidden">
               <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${stats.profileCompletion}%` }} />
             </div>
-            <button onClick={() => navigate('/profile')} className="text-[10px] font-medium text-blue-650 dark:text-blue-400 uppercase tracking-wider hover:underline text-left flex items-center gap-1.5">
+            <button onClick={() => navigate('/profile')} className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider hover:underline text-left flex items-center gap-1.5">
               <span>Complete Profile</span> <ArrowRight className="w-3 h-3" />
             </button>
           </div>
@@ -340,42 +340,21 @@ export function Dashboard() {
         {/* Recommended Jobs Column */}
         <div className="lg:col-span-2 space-y-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white flex items-center gap-2.5">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2.5">
               <span>Recommended Jobs</span>
-              <span className="text-xs font-medium px-2.5 py-0.5 bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20 rounded-full">
+              <span className="text-xs font-semibold px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-500/15 dark:text-blue-400 dark:border-blue-500/20 rounded-full">
                 12 new
               </span>
             </h2>
-            <button onClick={() => navigate('/jobs')} className="text-xs font-semibold text-blue-650 dark:text-blue-400 uppercase tracking-wider hover:underline">
+            <button onClick={() => navigate('/jobs')} className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 uppercase tracking-wider">
               View All
-            </button>
-          </div>
-
-          {/* Search bar inside cards */}
-          <div className="flex gap-4 items-center">
-            <div className="relative flex-grow">
-              <Search className="absolute left-4 top-4 w-4.5 h-4.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search jobs by title, company or keyword..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white dark:bg-[#15161e] border border-slate-250/60 dark:border-slate-800 rounded-2xl pl-11 pr-4 py-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 dark:text-white"
-              />
-            </div>
-            <button 
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="bg-white dark:bg-[#15161e] border border-slate-250/60 dark:border-slate-805 rounded-2xl px-5 py-3.5 text-sm font-semibold text-slate-705 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 whitespace-nowrap transition-all"
-            >
-              <SlidersHorizontal className="w-4.5 h-4.5 text-slate-450 dark:text-slate-400" />
-              <span>Filters</span>
             </button>
           </div>
 
           {/* Jobs Listing */}
           <div className="space-y-4">
             {processedJobs.map((job) => (
-              <Card key={job.id} className="p-6 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] hover:shadow-md hover:border-slate-250/80 dark:hover:border-slate-700/80 transition-all duration-300 flex items-start gap-4 rounded-2xl">
+              <Card key={job.id} className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] hover:shadow-md hover:border-blue-200 dark:hover:border-slate-700/80 transition-all duration-300 flex items-start gap-4 rounded-2xl shadow-sm">
                 {renderCompanyLogo(job.company?.name || 'Company')}
                 
                 <div className="flex-grow space-y-3.5">
@@ -384,17 +363,17 @@ export function Dashboard() {
                       <div className="flex items-center gap-2">
                         <h4 
                           onClick={() => handleJobNavigation(job.id)}
-                          className="font-semibold text-slate-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer text-base leading-snug"
+                          className="font-bold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer text-base leading-snug"
                         >
                           {job.title}
                         </h4>
-                        {job.is_new && <Badge variant="success" className="bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20 uppercase text-[9px] font-medium">New</Badge>}
+                        {job.is_new && <Badge variant="success" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20 uppercase text-[9px] font-bold">New</Badge>}
                       </div>
-                      <p className="text-xs font-medium text-slate-455 dark:text-white leading-none">{job.company?.name}</p>
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-none">{job.company?.name}</p>
                     </div>
                     
                     <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-medium text-emerald-800 bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
+                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-500/15 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 px-2 py-0.5 rounded-full uppercase">
                         {job.match_score || 90}% Match
                       </span>
                       <button 
@@ -406,10 +385,10 @@ export function Dashboard() {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-400 dark:text-white font-medium">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-500 dark:text-slate-300 font-medium">
                     <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-slate-400" /> {job.location || 'Location'}</span>
                     <span className="flex items-center gap-1.5"><Briefcase className="w-3.5 h-3.5 text-slate-400" /> {job.job_type}</span>
-                    <span className="flex items-center gap-0.5"><span className="text-slate-500 dark:text-white font-semibold">₹</span> {job.salary || 'Not disclosed'}</span>
+                    <span className="flex items-center gap-0.5"><span className="text-slate-700 dark:text-white font-bold">₹</span> {job.salary || 'Not disclosed'}</span>
                   </div>
                 </div>
               </Card>
@@ -420,39 +399,39 @@ export function Dashboard() {
         {/* Right Side Column */}
         <div className="space-y-6">
           {/* Recent Applications */}
-          <Card className="p-6 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-6 rounded-2xl">
+          <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-6 rounded-2xl shadow-sm">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-semibold text-slate-800 dark:text-white uppercase tracking-wider">Recent Applications</h3>
-              <span className="text-xs font-medium px-2 py-0.5 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-white rounded-full">
+              <h3 className="text-xs font-bold text-slate-700 dark:text-white uppercase tracking-wider">Recent Applications</h3>
+              <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-white rounded-full">
                 {recentApplications.length}
               </span>
             </div>
 
             {recentApplications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <div className="p-4 bg-slate-50 dark:bg-black/30 rounded-full text-slate-405 dark:text-slate-500">
+                <div className="p-4 bg-slate-100 text-slate-500 dark:bg-black/30 dark:text-slate-500 rounded-full">
                   <FolderOpen className="w-8 h-8" />
                 </div>
                 <div className="text-center space-y-1">
-                  <h4 className="text-xs font-bold text-slate-800 dark:text-white">No Applications Yet</h4>
-                  <p className="text-[10px] text-slate-450 dark:text-slate-500 max-w-[200px] leading-relaxed">Start applying for jobs to track your progress here.</p>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">No Applications Yet</h4>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 max-w-[200px] leading-relaxed">Start applying for jobs to track your progress here.</p>
                 </div>
               </div>
             ) : (
               <div className="divide-y divide-slate-100 dark:divide-slate-800 space-y-4">
                 {recentApplications.map((app, index) => (
-                  <div key={app.id} className={`flex flex-col space-y-2 ${index > 0 ? 'pt-4 border-t border-slate-50 dark:border-slate-805' : ''}`}>
+                  <div key={app.id} className={`flex flex-col space-y-2 ${index > 0 ? 'pt-4 border-t border-slate-100 dark:border-slate-800' : ''}`}>
                     <div className="flex justify-between items-start">
                       <div className="min-w-0 pr-2">
                         <h4 
                           onClick={() => handleJobNavigation(app.job?.id)}
-                          className="font-semibold text-slate-805 dark:text-white text-xs hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer truncate"
+                          className="font-bold text-slate-900 dark:text-white text-xs hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer truncate"
                         >
                           {app.job?.title || 'Unknown Job'}
                         </h4>
-                        <p className="text-[10px] text-slate-400 dark:text-white font-medium uppercase tracking-wider">{app.job?.company_name}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold uppercase tracking-wider">{app.job?.company_name}</p>
                       </div>
-                      <Badge variant={getStatusVariant(app.status)} className="capitalize text-[9px] shrink-0 font-medium px-2">
+                      <Badge variant={getStatusVariant(app.status)} className="capitalize text-[9px] shrink-0 font-bold px-2">
                         {app.status}
                       </Badge>
                     </div>
@@ -463,50 +442,50 @@ export function Dashboard() {
           </Card>
 
           {/* Quick Actions */}
-          <Card className="p-6 border border-slate-150/60 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-6 rounded-2xl">
-            <h3 className="text-xs font-semibold text-slate-800 dark:text-white uppercase tracking-wider">Quick Actions</h3>
+          <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] space-y-6 rounded-2xl shadow-sm">
+            <h3 className="text-xs font-bold text-slate-700 dark:text-white uppercase tracking-wider">Quick Actions</h3>
             
             <div className="grid grid-cols-1 gap-3.5">
               <button 
                 onClick={() => navigate('/resume')}
-                className="p-3.5 bg-white dark:bg-black/30 border border-slate-150/80 dark:border-slate-800/60 hover:border-blue-200 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
+                className="p-3.5 bg-white dark:bg-black/30 border border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 text-blue-500 dark:bg-blue-500/10 dark:text-blue-400 rounded-full border border-blue-500/20 shrink-0"><FileText className="w-4 h-4" /></div>
-                  <span className="text-xs font-medium text-slate-700 dark:text-white">Upload / Update Resume</span>
+                  <div className="p-2 bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400 rounded-full border border-blue-100 dark:border-blue-500/20 shrink-0"><FileText className="w-4 h-4" /></div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-white">Upload / Update Resume</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <button 
                 onClick={() => navigate('/profile')}
-                className="p-3.5 bg-white dark:bg-black/30 border border-slate-150/80 dark:border-slate-800/60 hover:border-blue-200 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
+                className="p-3.5 bg-white dark:bg-black/30 border border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-amber-500/10 text-amber-550 dark:bg-amber-500/10 dark:text-amber-400 rounded-full border border-amber-500/20 shrink-0"><User className="w-4 h-4" /></div>
-                  <span className="text-xs font-medium text-slate-700 dark:text-white">Complete Your Profile</span>
+                  <div className="p-2 bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400 rounded-full border border-amber-100 dark:border-amber-500/20 shrink-0"><User className="w-4 h-4" /></div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-white">Complete Your Profile</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <button 
                 onClick={() => navigate('/saved-jobs')}
-                className="p-3.5 bg-white dark:bg-black/30 border border-slate-150/80 dark:border-slate-800/60 hover:border-blue-200 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
+                className="p-3.5 bg-white dark:bg-black/30 border border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-purple-500/10 text-purple-500 dark:bg-purple-500/10 dark:text-purple-400 rounded-full border border-purple-500/20 shrink-0"><Bookmark className="w-4 h-4" /></div>
-                  <span className="text-xs font-medium text-slate-700 dark:text-white">Browse Saved Jobs</span>
+                  <div className="p-2 bg-purple-50 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400 rounded-full border border-purple-100 dark:border-purple-500/20 shrink-0"><Bookmark className="w-4 h-4" /></div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-white">Browse Saved Jobs</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>
 
               <button 
                 onClick={() => navigate('/jobs')}
-                className="p-3.5 bg-white dark:bg-black/30 border border-slate-150/80 dark:border-slate-800/60 hover:border-blue-200 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
+                className="p-3.5 bg-white dark:bg-black/30 border border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-900 rounded-2xl flex items-center justify-between group transition-all duration-300"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-teal-500/10 text-teal-500 dark:bg-teal-500/10 dark:text-teal-400 rounded-full border border-teal-500/20 shrink-0"><LayoutGrid className="w-4 h-4" /></div>
-                  <span className="text-xs font-medium text-slate-700 dark:text-white">Explore Job Categories</span>
+                  <div className="p-2 bg-teal-50 text-teal-600 dark:bg-teal-500/10 dark:text-teal-400 rounded-full border border-teal-100 dark:border-teal-500/20 shrink-0"><LayoutGrid className="w-4 h-4" /></div>
+                  <span className="text-xs font-semibold text-slate-800 dark:text-white">Explore Job Categories</span>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-1 transition-transform" />
               </button>

@@ -11,6 +11,11 @@ class ApplicationCreate(BaseSchema):
     job_id: int = Field(..., description="ID of the job posting being applied to")
 
 
+class ApplicationStatusUpdate(BaseSchema):
+    """Schema to validate request payload during application status update."""
+    status: ApplicationStatus
+
+
 class ApplicationResponse(BaseSchema):
     """Schema representing application response details."""
     id: int

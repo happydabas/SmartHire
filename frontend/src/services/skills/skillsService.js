@@ -7,10 +7,10 @@ export const skillsService = {
     return response.data;
   },
 
-  addSkill: async (skillId) => {
-    // Schema expects: { skill_ids: [id] }
+  addSkill: async (skillIds) => {
+    const ids = Array.isArray(skillIds) ? skillIds : [skillIds];
     const response = await api.post(API_ENDPOINTS.PROFILE.SKILLS, {
-      skill_ids: [skillId]
+      skill_ids: ids
     });
     return response.data;
   },

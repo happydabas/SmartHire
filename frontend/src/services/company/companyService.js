@@ -1,70 +1,89 @@
 import api from '../api/axios';
 import { API_ENDPOINTS } from '../api/endpoints';
-import { storage } from '@/utils/storage';
 
 export const companyService = {
+  // 1. Create new company profile (Onboarding)
+  createCompany: async (companyData) => {
+    const response = await api.post(API_ENDPOINTS.COMPANY.BASE, companyData);
+    return response.data;
+  },
+
+  // 2. Fetch company profile details
   getCompany: async (companyId) => {
     if (!companyId) {
       throw new Error('No company profile associated with this account');
     }
-    // Fetch baseline from backend
     const response = await api.get(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}`);
-    const apiCompany = response.data;
-    
-    // Apply local storage overrides if any
-    const localOverrides = storage.getItem(`company_override_${companyId}`) || {};
-    
-    return {
-      ...apiCompany,
-      description: localOverrides.description || apiCompany.description || '',
-      website: localOverrides.website || apiCompany.website || '',
-      industry: localOverrides.industry || apiCompany.industry || '',
-      company_size: localOverrides.company_size || apiCompany.company_size || '',
-      headquarters: localOverrides.headquarters || apiCompany.headquarters || '',
-      logo: localOverrides.logo || apiCompany.logo || ''
-    };
+    return response.data;
   },
 
+  // 3. Update company profile details
   updateCompany: async (companyId, companyData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        // Save overrides locally to ensure recruiters can edit without 403 blocks
-        const overrides = storage.getItem(`company_override_${companyId}`) || {};
-        const updatedOverrides = {
-          ...overrides,
-          ...companyData
-        };
-        storage.setItem(`company_override_${companyId}`, updatedOverrides);
-        resolve({ id: companyId, ...updatedOverrides });
-      }, 500);
-    });
+    const response = await api.put(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}`, companyData);
+    return response.data;
   },
 
+  // 4. List recruiters belonging to the company
+  getRecruiters: async (companyId) => {
+    const response = await api.get(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/recruiters`);
+    return response.data;
+  },
+
+  // 5. Remove a recruiter from the company
+  removeRecruiter: async (companyId, recruiterId) => {
+    const response = await api.delete(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/recruiters/${recruiterId}`);
+    return response.data;
+  },
+
+  // 6. List invitations sent by the company
+  getInvitations: async (companyId) => {
+    const response = await api.get(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/invitations`);
+    return response.data;
+  },
+
+  // 7. Send recruiter invitation
+  sendInvitation: async (companyId, recruiterEmail) => {
+    const response = await api.post(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/invitations`, {
+      recruiter_email: recruiterEmail
+    });
+    return response.data;
+  },
+
+  // 8. Cancel pending recruiter invitation
+  cancelInvitation: async (companyId, invitationId) => {
+    const response = await api.delete(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/invitations/${invitationId}`);
+    return response.data;
+  },
+
+  // 9. Inspect invitation token details
+  getInvitationDetails: async (token) => {
+    const response = await api.get(`/invitations/${token}`);
+    return response.data;
+  },
+
+  // 10. Accept recruiter invitation
+  acceptInvitation: async (payload) => {
+    const response = await api.post('/invitations/accept', payload);
+    return response.data;
+  },
+
+  // 11. Upload company logo helper
   uploadLogo: async (file) => {
     return new Promise((resolve, reject) => {
-      // Validate type
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
       if (!allowedTypes.includes(file.type)) {
         reject(new Error('Invalid file type. Only JPG, JPEG, and PNG files are accepted.'));
         return;
       }
-
-      // Validate size (< 2MB)
       const maxSize = 2 * 1024 * 1024; // 2MB
       if (file.size > maxSize) {
         reject(new Error('File size exceeds the 2MB limit. Please upload a smaller image.'));
         return;
       }
-
-      // Convert to base64 Data URL
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => {
-        resolve(reader.result);
-      };
-      reader.onerror = (err) => {
-        reject(new Error('Failed to read image file.'));
-      };
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Failed to read image file.'));
     });
   }
 };

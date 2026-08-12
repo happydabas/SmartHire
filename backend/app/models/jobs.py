@@ -10,38 +10,42 @@ from app.models.base import Base, TimestampMixin
 class JobType(str, enum.Enum):
     """
     Enum representing employment contract types.
+    Values must match the PostgreSQL 'job_type_enum' values exactly.
     """
-    FULL_TIME = "Full-time"
-    PART_TIME = "Part-time"
-    CONTRACT = "Contract"
-    INTERNSHIP = "Internship"
+    FULL_TIME = "FULL_TIME"
+    PART_TIME = "PART_TIME"
+    CONTRACT = "CONTRACT"
+    INTERNSHIP = "INTERNSHIP"
 
 
 class ExperienceLevel(str, enum.Enum):
     """
     Enum representing candidates experience milestones.
+    Values must match the PostgreSQL 'experience_level_enum' values exactly.
     """
-    FRESHER = "Fresher"
-    ENTRY = "Entry"
-    MID = "Mid"
-    SENIOR = "Senior"
+    FRESHER = "FRESHER"
+    ENTRY = "ENTRY"
+    MID = "MID"
+    SENIOR = "SENIOR"
 
 
 class WorkMode(str, enum.Enum):
     """
     Enum representing job workplace location rules.
+    Values must match the PostgreSQL 'work_mode_enum' values exactly.
     """
-    REMOTE = "Remote"
-    HYBRID = "Hybrid"
-    ONSITE = "Onsite"
+    REMOTE = "REMOTE"
+    HYBRID = "HYBRID"
+    ONSITE = "ONSITE"
 
 
 class JobStatus(str, enum.Enum):
     """
     Enum representing job publishing status.
+    Values must match the PostgreSQL 'job_status_enum' values exactly.
     """
-    DRAFT = "draft"
-    OPEN = "open"
+    DRAFT = "DRAFT"
+    OPEN = "OPEN"
     CLOSED = "closed"
 
 
@@ -199,8 +203,7 @@ class Job(Base, TimestampMixin):
     applications: Mapped[List["Application"]] = relationship(
         "Application",
         back_populates="job",
-        cascade="all, delete-orphan",
-        lazy="selectin"
+        cascade="all, delete-orphan"
     )
 
     # One-to-One relationship with HiringPipeline
@@ -211,3 +214,29 @@ class Job(Base, TimestampMixin):
         cascade="all, delete-orphan",
         lazy="selectin"
     )
+
+    # One-to-Many relationship with JobRecruiter entries
+    job_recruiter_assignments: Mapped[List["JobRecruiter"]] = relationship(
+        "JobRecruiter",
+        back_populates="job",
+        cascade="all, delete-orphan",
+        lazy="selectin"
+    )
+
+    # Many-to-Many relationship with User (assigned recruiters) through job_recruiters
+    assigned_recruiters: Mapped[List["User"]] = relationship(
+        "User",
+        secondary="job_recruiters",
+        back_populates="assigned_jobs",
+        lazy="selectin",
+        viewonly=True
+    )
+
+    @property
+    def assigned_recruiter_ids(self) -> List[int]:
+        """Safely inspect __dict__ to return list of assigned recruiter IDs without triggering lazy IO."""
+        if "job_recruiter_assignments" in self.__dict__ and self.__dict__["job_recruiter_assignments"]:
+            return [a.recruiter_id for a in self.__dict__["job_recruiter_assignments"]]
+        if "assigned_recruiters" in self.__dict__ and self.__dict__["assigned_recruiters"]:
+            return [u.id for u in self.__dict__["assigned_recruiters"]]
+        return []

@@ -15,10 +15,10 @@ export const Button = React.forwardRef(({
   const baseStyles = 'inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] active:translate-y-px transform select-none';
   
   const variants = {
-    primary: 'bg-blue-650 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700 text-white shadow-md shadow-blue-500/10 focus:ring-blue-500 border border-transparent',
-    secondary: 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 focus:ring-slate-400 dark:bg-[#15161e] dark:hover:bg-slate-800/40 dark:text-slate-200 dark:border-slate-800',
-    ghost: 'bg-transparent hover:bg-slate-50 text-slate-650 focus:ring-slate-400 border border-transparent dark:hover:bg-slate-800/40 dark:text-slate-400',
-    danger: 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-100 focus:ring-rose-400 dark:bg-rose-955/10 dark:hover:bg-rose-955/20 dark:text-rose-400 dark:border-rose-900/30',
+    primary: 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 focus:ring-blue-500 border border-transparent',
+    secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 focus:ring-slate-400 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:border-slate-700',
+    ghost: 'bg-transparent hover:bg-slate-100 text-slate-700 focus:ring-slate-400 border border-transparent dark:hover:bg-slate-800/40 dark:text-slate-300',
+    danger: 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 focus:ring-rose-400 dark:bg-rose-950/20 dark:hover:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/30',
   };
 
   const sizes = {

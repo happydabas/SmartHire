@@ -23,7 +23,10 @@ class UserService:
         - Hashes password.
         - Deletes password keys from outputs.
         """
-        # 1. Verify email uniqueness
+        # 1. Normalize email address
+        user_in.email = user_in.email.strip().lower()
+
+        # 2. Verify email uniqueness
         existing_user = await self.user_repo.get_by_email(self.db, email=user_in.email)
         if existing_user:
             raise HTTPException(

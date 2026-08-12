@@ -110,8 +110,7 @@ class Application(Base, TimestampMixin):
     # Many-to-One relationship back to User
     user: Mapped["User"] = relationship(
         "User",
-        back_populates="applications",
-        lazy="selectin"
+        back_populates="applications"
     )
 
     # Many-to-One relationship back to Resume

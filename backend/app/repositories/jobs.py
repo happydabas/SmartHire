@@ -3,6 +3,7 @@ from decimal import Decimal
 from sqlalchemy import or_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from app.models.jobs import Job, JobStatus, JobType, ExperienceLevel, WorkMode
 from app.models.companies import Company
@@ -18,7 +19,11 @@ class JobRepository:
         """
         Retrieve an active (non-soft-deleted) job posting by its primary key ID.
         """
-        stmt = select(Job).where(
+        stmt = select(Job).options(
+            selectinload(Job.recruiter),
+            selectinload(Job.pipeline),
+            selectinload(Job.job_recruiter_assignments)
+        ).where(
             Job.id == job_id,
             Job.is_deleted == False
         )
@@ -42,7 +47,12 @@ class JobRepository:
         Retrieve all active OPEN job postings with optional query filtering.
         Excludes DRAFT, CLOSED, and DELETED listings.
         """
-        stmt = select(Job).where(
+        stmt = select(Job).options(
+            selectinload(Job.recruiter),
+            selectinload(Job.pipeline),
+            selectinload(Job.company),
+            selectinload(Job.job_recruiter_assignments)
+        ).where(
             Job.status == JobStatus.OPEN,
             Job.is_deleted == False
         )
@@ -104,7 +114,12 @@ class JobRepository:
         Excludes DRAFT, CLOSED, and DELETED listings.
         """
         # 1. Base query
-        stmt = select(Job).where(
+        stmt = select(Job).options(
+            selectinload(Job.recruiter),
+            selectinload(Job.pipeline),
+            selectinload(Job.company),
+            selectinload(Job.job_recruiter_assignments)
+        ).where(
             Job.status == JobStatus.OPEN,
             Job.is_deleted == False
         )
@@ -160,12 +175,105 @@ class JobRepository:
         """
         Retrieve all active (non-soft-deleted) job postings belonging to the company.
         """
-        stmt = select(Job).where(
+        stmt = select(Job).options(
+            selectinload(Job.recruiter),
+            selectinload(Job.pipeline),
+            selectinload(Job.job_recruiter_assignments)
+        ).where(
             Job.company_id == company_id,
             Job.is_deleted == False
         )
         result = await db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_company_jobs_for_user(
+        self,
+        db: AsyncSession,
+        company_id: int,
+        user_id: int,
+        is_owner: bool
+    ) -> List[Job]:
+        """
+        Retrieve active jobs for a company based on recruiter permissions.
+        - Company Owner: receives all non-soft-deleted company jobs.
+        - Normal Recruiter: receives ONLY non-soft-deleted jobs assigned to them in job_recruiters.
+        """
+        from app.models.job_recruiters import JobRecruiter
+
+        if is_owner:
+            stmt = select(Job).options(
+                selectinload(Job.recruiter),
+                selectinload(Job.pipeline),
+                selectinload(Job.job_recruiter_assignments)
+            ).where(
+                Job.company_id == company_id,
+                Job.is_deleted == False
+            )
+        else:
+            stmt = (
+                select(Job)
+                .options(
+                    selectinload(Job.recruiter),
+                    selectinload(Job.pipeline),
+                    selectinload(Job.job_recruiter_assignments)
+                )
+                .join(JobRecruiter, Job.id == JobRecruiter.job_id)
+                .where(
+                    Job.company_id == company_id,
+                    JobRecruiter.recruiter_id == user_id,
+                    Job.is_deleted == False
+                )
+                .distinct()
+            )
+        result = await db.execute(stmt)
+        return list(result.scalars().all())
+
+    async def is_recruiter_assigned(self, db: AsyncSession, job_id: int, recruiter_id: int) -> bool:
+        """
+        Check if a recruiter is explicitly assigned to a job in job_recruiters.
+        """
+        from app.models.job_recruiters import JobRecruiter
+        stmt = select(JobRecruiter.job_id).where(
+            JobRecruiter.job_id == job_id,
+            JobRecruiter.recruiter_id == recruiter_id
+        )
+        res = await db.execute(stmt)
+        return res.scalar_one_or_none() is not None
+
+    async def get_assigned_recruiter_ids(self, db: AsyncSession, job_id: int) -> List[int]:
+        """
+        Retrieve list of recruiter IDs assigned to a specific job.
+        """
+        from app.models.job_recruiters import JobRecruiter
+        stmt = select(JobRecruiter.recruiter_id).where(JobRecruiter.job_id == job_id)
+        res = await db.execute(stmt)
+        return list(res.scalars().all())
+
+    async def update_job_recruiters(
+        self,
+        db: AsyncSession,
+        job_id: int,
+        recruiter_ids: List[int]
+    ) -> List[int]:
+        """
+        Update the recruiter assignments for a job in job_recruiters table.
+        Removes unselected recruiters and adds newly selected recruiters.
+        """
+        from sqlalchemy import delete
+        from app.models.job_recruiters import JobRecruiter
+
+        # Delete existing assignments
+        del_stmt = delete(JobRecruiter).where(JobRecruiter.job_id == job_id)
+        await db.execute(del_stmt)
+
+        # Add new assignments
+        unique_rec_ids = list(set(recruiter_ids))
+        for rid in unique_rec_ids:
+            new_assign = JobRecruiter(job_id=job_id, recruiter_id=rid)
+            db.add(new_assign)
+
+        await db.commit()
+        return unique_rec_ids
 
     async def get_recruiter_jobs(self, db: AsyncSession, recruiter_id: int) -> List[Job]:
         """

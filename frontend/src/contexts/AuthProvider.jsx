@@ -12,15 +12,35 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize auth state from local storage on mount
   useEffect(() => {
-    const storedUser = storage.getItem(STORAGE_KEYS.USER);
-    const storedToken = storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-    
-    if (storedUser && storedToken) {
-      setUser(storedUser);
-      setAccessToken(storedToken);
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    const initAuth = async () => {
+      const storedUser = storage.getItem(STORAGE_KEYS.USER);
+      const storedToken = storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+      
+      if (storedUser && storedToken) {
+        setAccessToken(storedToken);
+        setIsAuthenticated(true);
+
+        // Refresh user profile from backend to sync is_owner, company_id, etc.
+        try {
+          const { default: api } = await import('@/services/api/axios');
+          // Use nocache to bypass client-side response cache for fresh user data
+          const res = await api.get('/auth/me', { params: { nocache: true } });
+          const freshUser = res.data;
+          if (freshUser && freshUser.id) {
+            storage.setItem(STORAGE_KEYS.USER, freshUser);
+            setUser(freshUser);
+          } else {
+            setUser(storedUser);
+          }
+        } catch (err) {
+          // Fallback to stored user if /auth/me fails (e.g. token expired)
+          setUser(storedUser);
+        }
+      }
+      setIsLoading(false);
+    };
+
+    initAuth();
   }, []);
 
   // Listeners coordinate axios token refreshes from outside React lifecycle

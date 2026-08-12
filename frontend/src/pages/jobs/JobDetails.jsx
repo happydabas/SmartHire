@@ -26,6 +26,7 @@ import { resumeService } from '@/services/resume/resumeService';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
 import { formatSalary } from '@/utils/formatSalary';
+import { formatJobType, formatWorkMode, formatExperienceLevel } from '@/utils/enumFormatters';
 import { notificationService } from '@/services/notificationService';
 
 // Reusable UI components
@@ -182,8 +183,8 @@ export function JobDetailsPage() {
     );
   }
 
-  const typeLabel = typeof job.job_type === 'string' ? job.job_type : (job.job_type?.value || '');
-  const modeLabel = typeof job.work_mode === 'string' ? job.work_mode : (job.work_mode?.value || '');
+  const typeLabel = formatJobType(job.job_type);
+  const modeLabel = formatWorkMode(job.work_mode);
 
   if (showMatchScore && job) {
     return (

@@ -81,35 +81,23 @@ export const applicationService = {
     forceRefetch = false
   }) => {
     if (cachedRecruiterApplications === null || forceRefetch) {
-      // 1. Fetch recruiter's own jobs list
-      const jobs = await api.get(API_ENDPOINTS.MY.JOBS).then(res => res.data || []);
-      
-      // 2. Fetch applications for each job concurrently
-      const appsPromises = jobs.map(async (job) => {
-        try {
-          const url = `${API_ENDPOINTS.RECRUITER.APPLICATIONS}/${job.id}/applications`;
-          const res = await api.get(url, { params: { page: 1, limit: 100 } });
-          return res.data?.items || [];
-        } catch (err) {
-          console.warn(`Failed to fetch applications for job ${job.id}:`, err);
-          return [];
-        }
-      });
-      
-      const appsArrays = await Promise.all(appsPromises);
-      const allApps = appsArrays.flat();
-      
-      // 3. Map mock match scores and override status from localStorage
-      cachedRecruiterApplications = allApps.map(app => {
-        const appId = app.id || 0;
-        const score = (appId % 30) + 70; // Deterministic score: 70% to 99%
-        const storedStatus = localStorage.getItem(`app_status_${appId}`);
-        return {
-          ...app,
-          status: storedStatus || app.status,
-          matchScore: score
-        };
-      });
+      try {
+        const res = await api.get(`${API_ENDPOINTS.APPLICATIONS.BASE}/company`, { params: { page: 1, limit: 100 } });
+        const allApps = res.data?.items || [];
+        cachedRecruiterApplications = allApps.map(app => {
+          const appId = app.id || 0;
+          const score = (appId % 30) + 70;
+          const storedStatus = localStorage.getItem(`app_status_${appId}`);
+          return {
+            ...app,
+            status: storedStatus || app.status,
+            matchScore: score
+          };
+        });
+      } catch (err) {
+        console.warn('Backend company applications fetch failed, falling back to empty list:', err);
+        cachedRecruiterApplications = [];
+      }
     }
 
     // Apply Search filter (Name, Title, Email)

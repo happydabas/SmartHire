@@ -74,16 +74,37 @@ def get_current_user_id(token: str = Depends(oauth2_scheme)) -> int:
         )
 
 
+import time
+
+# Lightweight in-memory TTL cache for active user lookups
+_USER_CACHE = {}  # user_id -> (user_obj, timestamp)
+_CACHE_TTL_SECONDS = 30
+
+def clear_user_cache(user_id: int = None):
+    """Utility to invalidate user cache upon profile or role updates."""
+    global _USER_CACHE
+    if user_id:
+        _USER_CACHE.pop(user_id, None)
+    else:
+        _USER_CACHE.clear()
+
 async def get_current_user(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ) -> User:
     """
-    Asynchronously queries PostgreSQL to load the full User record matching
-    the validated user ID payload.
+    Asynchronously queries PostgreSQL to load the User record matching
+    the validated user ID payload. Employs a 30s in-memory TTL cache to
+    eliminate duplicate database queries across concurrent requests.
     """
     user_id = get_current_user_id(token)
-    
+    now = time.time()
+
+    if user_id in _USER_CACHE:
+        cached_user, cache_time = _USER_CACHE[user_id]
+        if now - cache_time < _CACHE_TTL_SECONDS:
+            return cached_user
+
     user = await user_repo.get_by_id(db, user_id=user_id)
     if not user:
         raise HTTPException(
@@ -91,6 +112,21 @@ async def get_current_user(
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    from sqlalchemy.future import select
+    from app.models.companies import Company
+    stmt = select(Company.id).where(Company.owner_id == user.id)
+    res = await db.execute(stmt)
+    owned_comp_id = res.scalar_one_or_none()
+
+    if owned_comp_id is not None:
+        user.is_owner = True
+        if not user.company_id:
+            user.company_id = owned_comp_id
+    else:
+        user.is_owner = bool(user.role == UserRole.COMPANY_OWNER)
+
+    _USER_CACHE[user_id] = (user, now)
     return user
 
 

@@ -1,4 +1,5 @@
 from typing import List, Optional
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -13,9 +14,10 @@ class UserRepository:
     
     async def get_by_email(self, db: AsyncSession, email: str) -> Optional[User]:
         """
-        Retrieve a user record matching the given email.
+        Retrieve a user record matching the given email (case-insensitive).
         """
-        stmt = select(User).where(User.email == email)
+        normalized_email = email.strip().lower()
+        stmt = select(User).where(func.lower(User.email) == normalized_email)
         result = await db.execute(stmt)
         return result.scalars().first()
 

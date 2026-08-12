@@ -19,6 +19,7 @@ from app.models.recruiter_notes import RecruiterNote
 from app.models.notifications import Notification
 from app.models.company_invitations import CompanyInvitation, InvitationStatus
 from app.models.saved_jobs import SavedJob
+from app.models.job_recruiters import JobRecruiter
 
 __all__ = [
     "Base",
@@ -46,4 +47,5 @@ __all__ = [
     "CompanyInvitation",
     "InvitationStatus",
     "SavedJob",
+    "JobRecruiter",
 ]

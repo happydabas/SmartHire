@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
-import Input from '@/components/ui/Input';
-import Button from '@/components/ui/Button';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import { validators } from '@/utils/validators';
 import { extractErrorMessage, mapLoginError, parseFormErrors } from '@/utils/errorParser';
 import ErrorMessage from '@/components/common/ErrorMessage';
@@ -16,7 +14,6 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -82,19 +79,25 @@ function Login() {
 
     try {
       const credentials = {
-        email: email,
+        email: email.trim().toLowerCase(),
         password: password
       };
 
-      await login(credentials);
+      const authData = await login(credentials);
       
       setSuccessMessage('Login successful! Redirecting...');
       
       setTimeout(() => {
         setIsLoading(false);
-        const redirectTo = searchParams.get('redirect') || '/dashboard';
+        const userRole = authData?.user?.role;
+        let defaultRedirect = '/dashboard';
+        if (userRole === 'recruiter') defaultRedirect = '/recruiter';
+        else if (userRole === 'admin') defaultRedirect = '/admin/dashboard';
+        else if (userRole === 'company_owner') defaultRedirect = '/company';
+
+        const redirectTo = searchParams.get('redirect') || defaultRedirect;
         navigate(redirectTo);
-      }, 1500);
+      }, 1000);
     } catch (error) {
       console.error("DEBUG Login catch block caught error:", error);
       setIsLoading(false);
@@ -113,112 +116,145 @@ function Login() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold text-slate-900 tracking-tight text-center">Welcome Back</h2>
-        <p className="text-sm text-slate-500 text-center">Enter your details to manage your profile</p>
+    <div>
+      {/* Header Section */}
+      <div className="text-center mb-7">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Welcome Back!
+        </h1>
+        <p className="text-sm text-slate-500 font-normal mt-1.5">
+          Sign in to your account and continue your journey
+        </p>
       </div>
 
       {successMessage && (
-        <div className="p-3.5 text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl">
+        <div className="mb-5 p-3.5 text-sm font-medium text-emerald-600 bg-emerald-50 border border-emerald-200 rounded-xl">
           {successMessage}
         </div>
       )}
 
-      <div className="space-y-4">
-        {/* Email Input */}
-        <Input
-          label="Email Address"
-          id="email"
-          type="email"
-          placeholder="name@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={() => handleBlur('email')}
-          error={emailError}
-          autoComplete="email"
-          disabled={isLoading}
-          required
-        />
-
-        {/* Password Input with Visibility Toggle */}
-        <div className="relative w-full">
-          <Input
-            label="Password"
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onBlur={() => handleBlur('password')}
-            error={passwordError}
-            autoComplete="current-password"
-            disabled={isLoading}
-            required
-            className="pr-12"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            disabled={isLoading}
-            className="absolute right-3 top-[34px] p-1.5 text-slate-400 hover:text-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50"
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-          >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Remember Me & Forgot Password Links */}
-      <div className="flex items-center justify-between text-sm select-none">
-        <label className="flex items-center gap-2 text-slate-600 font-medium cursor-pointer">
-          <input
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            disabled={isLoading}
-            className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500/20 cursor-pointer disabled:opacity-50"
-          />
-          <span>Remember me</span>
-        </label>
-        
-        <Link 
-          to="#"
-          onClick={(e) => { e.preventDefault(); setFormError('Forgot password recovery is not supported at this time.'); }}
-          className="font-semibold text-blue-600 hover:text-blue-700 transition-colors"
-        >
-          Forgot password?
-        </Link>
-      </div>
-
       {formError && (
-        <div className="p-3.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl">
+        <div className="mb-5 p-3.5 text-sm font-medium text-red-600 bg-red-50 border border-red-200 rounded-xl">
           <ErrorMessage message={formError} className="mt-0" />
         </div>
       )}
 
-      {/* Submit Button */}
-      <Button
-        type="submit"
-        disabled={!isValid}
-        isLoading={isLoading}
-        className="w-full py-3"
-      >
-        Sign In
-      </Button>
+      <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+        {/* Email Address Input */}
+        <div>
+          <label htmlFor="email" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+            EMAIL ADDRESS <span className="text-red-500 font-bold">*</span>
+          </label>
+          <div className="relative">
+            <Mail className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onBlur={() => handleBlur('email')}
+              autoComplete="email"
+              disabled={isLoading}
+              required
+              className={`w-full pl-11 pr-4 py-3 bg-[#f8fafc] text-slate-900 text-sm rounded-xl border ${
+                emailError 
+                  ? 'border-red-400 focus:ring-red-400/20' 
+                  : 'border-slate-200/80 focus:border-blue-600 focus:ring-blue-600/10'
+              } focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400 font-normal`}
+            />
+          </div>
+          {emailError && <p className="text-xs text-red-500 mt-1 font-medium">{emailError}</p>}
+        </div>
 
-      {/* Redirect Register footer */}
-      <p className="text-sm text-center text-slate-500">
-        Don't have an account?{' '}
-        <Link 
-          to="/register" 
-          className="font-bold text-blue-600 hover:text-blue-700 transition-colors"
+        {/* Password Input */}
+        <div>
+          <label htmlFor="password" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+            PASSWORD <span className="text-red-500 font-bold">*</span>
+          </label>
+          <div className="relative">
+            <Lock className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="password"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onBlur={() => handleBlur('password')}
+              autoComplete="current-password"
+              disabled={isLoading}
+              required
+              className={`w-full pl-11 pr-11 py-3 bg-[#f8fafc] text-slate-900 text-sm rounded-xl border ${
+                passwordError 
+                  ? 'border-red-400 focus:ring-red-400/20' 
+                  : 'border-slate-200/80 focus:border-blue-600 focus:ring-blue-600/10'
+              } focus:bg-white focus:ring-4 focus:outline-none transition-all placeholder:text-slate-400 font-normal`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 focus:outline-none disabled:opacity-50"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
+          {passwordError && <p className="text-xs text-red-500 mt-1 font-medium">{passwordError}</p>}
+        </div>
+
+        {/* Forgot Password Link */}
+        <div className="flex justify-end pt-1">
+          <Link 
+            to="#"
+            onClick={(e) => { e.preventDefault(); setFormError('Forgot password recovery is not supported at this time.'); }}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+          >
+            Forgot password?
+          </Link>
+        </div>
+
+        {/* Submit Button - Sign In WITHOUT arrow symbol */}
+        <button
+          type="submit"
+          disabled={!isValid || isLoading}
+          className="w-full mt-2 py-3.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-base rounded-xl shadow-lg shadow-blue-600/30 focus:outline-none focus:ring-4 focus:ring-blue-600/25 transition-all duration-200 disabled:bg-blue-600 disabled:opacity-80 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
         >
-          Get Started
-        </Link>
-      </p>
-    </form>
+          {isLoading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span>Signing in...</span>
+            </>
+          ) : (
+            <span>Sign In</span>
+          )}
+        </button>
+
+        {/* Divider */}
+        <div className="relative py-4 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200/80"></div>
+          </div>
+          <span className="relative bg-white px-3 text-xs font-normal text-slate-400">or</span>
+        </div>
+
+        {/* Footer Link */}
+        <p className="text-sm text-center text-slate-500 font-normal pt-1">
+          Don't have an account?{' '}
+          <Link 
+            to="/register" 
+            className="font-semibold text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center gap-1"
+          >
+            Get Started <ArrowRight className="w-4 h-4" />
+          </Link>
+        </p>
+      </form>
+    </div>
   );
 }
 
 export default Login;
+

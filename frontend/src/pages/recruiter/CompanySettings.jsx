@@ -181,6 +181,22 @@ export function CompanySettings() {
     return <SkeletonProfile />;
   }
 
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+
+  if (!isOwner) {
+    return (
+      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
+        <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+          <ShieldAlert className="w-6 h-6" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
+        <p className="text-sm text-slate-500 leading-relaxed">
+          Only the Company Owner is authorized to view or modify company settings.
+        </p>
+      </div>
+    );
+  }
+
   // Handle case where recruiter is not linked to any company
   if (!companyId) {
     return (

@@ -9,7 +9,7 @@ function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <div className="h-screen flex bg-white dark:bg-[#090a0f] overflow-hidden transition-colors duration-300">
+    <div className="h-screen flex bg-slate-50/60 dark:bg-[#090a0f] overflow-hidden transition-colors duration-300">
       {/* Desktop Sidebar (collapsible) */}
       <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
 

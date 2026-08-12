@@ -22,6 +22,9 @@ import {
 import Avatar from '@/components/ui/Avatar';
 import NotificationBell from '@/components/notifications/NotificationBell';
 
+import CreateCompanyOnboarding from '@/pages/recruiter/CreateCompanyOnboarding';
+import { UserCheck } from 'lucide-react';
+
 export function RecruiterLayout() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -51,6 +54,10 @@ export function RecruiterLayout() {
     }, 3000);
   };
 
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+  const hasNoCompany = Boolean(user?.role === 'recruiter' && !user?.company_id);
+
+  // Dynamic navigation items according to recruiter authorization role
   const navigationItems = [
     {
       name: 'Dashboard',
@@ -58,26 +65,39 @@ export function RecruiterLayout() {
       path: '/recruiter',
       exact: true
     },
-    {
-      name: 'Create Job',
-      icon: PlusCircle,
-      path: '/recruiter/jobs/create'
-    },
+    ...(isOwner
+      ? [
+          {
+            name: 'Create Job',
+            icon: PlusCircle,
+            path: '/recruiter/jobs/create'
+          }
+        ]
+      : []),
     {
       name: 'Manage Jobs',
       icon: Briefcase,
       path: '/recruiter/jobs'
     },
     {
-      name: 'Applicants',
+      name: 'Applications',
       icon: Users,
       path: '/recruiter/applicants'
     },
-    {
-      name: 'Company Settings',
-      icon: Building,
-      path: '/recruiter/company/settings'
-    },
+    ...(isOwner
+      ? [
+          {
+            name: 'Recruiters',
+            icon: UserCheck,
+            path: '/recruiter/team'
+          },
+          {
+            name: 'Company Settings',
+            icon: Building,
+            path: '/recruiter/company/settings'
+          }
+        ]
+      : []),
     {
       name: 'Profile',
       icon: User,
@@ -195,13 +215,13 @@ export function RecruiterLayout() {
             >
               {isDarkMode ? (
                 <>
-                  <Sun className="w-4 h-4 shrink-0 text-slate-500 dark:text-white" />
-                  {!isCollapsed && <span>Light Mode</span>}
+                  <Moon className="w-4 h-4 shrink-0 text-blue-400" />
+                  {!isCollapsed && <span>Dark Mode</span>}
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4 shrink-0 text-slate-500 dark:text-white" />
-                  {!isCollapsed && <span>Dark Mode</span>}
+                  <Sun className="w-4 h-4 shrink-0 text-amber-500" />
+                  {!isCollapsed && <span>Light Mode</span>}
                 </>
               )}
             </button>
@@ -311,7 +331,7 @@ export function RecruiterLayout() {
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-white dark:bg-[#090a0f] transition-colors duration-300">
           <main className="flex-grow p-4 sm:p-6 md:p-8">
             <div className="animate-fadeIn animate-slideUp">
-              <Outlet />
+              {hasNoCompany ? <CreateCompanyOnboarding /> : <Outlet />}
             </div>
           </main>
 

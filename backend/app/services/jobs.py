@@ -14,6 +14,7 @@ from app.models.job_required_skills import JobRequiredSkill
 from app.models.pipelines import HiringPipeline, PipelineStage
 from app.models.users import User, UserRole
 from app.models.companies import Company
+from app.core.cache import ttl_cache
 
 class JobService:
     """
@@ -109,9 +110,14 @@ class JobService:
             )
             self.db.add(stage)
 
+        # Create recruiter assignments in job_recruiters
+        assign_ids = obj_in.recruiter_ids if (obj_in.recruiter_ids and len(obj_in.recruiter_ids) > 0) else [current_user.id]
+        await self.job_repo.update_job_recruiters(self.db, job.id, assign_ids)
+
         await self.db.commit()
         await self.db.refresh(job)
 
+        ttl_cache.invalidate_prefix("jobs:")
         return job
 
     async def get_job(self, job_id: int) -> Job:
@@ -126,6 +132,62 @@ class JobService:
                 detail="Job posting not found."
             )
         return job
+
+    async def get_job_for_user(self, job_id: int, current_user: User) -> Job:
+        """
+        Retrieve a job record while enforcing recruiter access authorization.
+        - Company Owner: Can view any job belonging to their company.
+        - Normal Recruiter: Can ONLY view jobs assigned to them in job_recruiters.
+        Raises 403 if unauthorized or 404 if not found.
+        """
+        job = await self.get_job(job_id=job_id)
+        
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        
+        if is_owner:
+            if current_user.company_id and job.company_id != current_user.company_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You do not have permission to access jobs from another company."
+                )
+            return job
+
+        # Normal recruiter authorization check
+        if job.company_id != current_user.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to access jobs from another company."
+            )
+
+        is_assigned = await self.job_repo.is_recruiter_assigned(self.db, job_id=job.id, recruiter_id=current_user.id)
+        if not is_assigned:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not authorized to view or access this job posting."
+            )
+        return job
+
+    async def update_job_assignments(self, job_id: int, recruiter_ids: List[int], current_user: User) -> List[int]:
+        """
+        Modify recruiter assignments for a job posting. Restrict to Company Owner.
+        """
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        if not is_owner:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only the Company Owner is authorized to modify recruiter assignments."
+            )
+
+        job = await self.get_job(job_id=job_id)
+        if current_user.company_id and job.company_id != current_user.company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to modify jobs from another company."
+            )
+
+        updated_ids = await self.job_repo.update_job_recruiters(self.db, job_id=job.id, recruiter_ids=recruiter_ids)
+        ttl_cache.invalidate_prefix("jobs:")
+        return updated_ids
 
     async def update_job(self, job_id: int, obj_in: JobUpdate, current_user: User) -> Job:
         """
@@ -414,6 +476,14 @@ class JobService:
         if skills and skills.strip():
             skills_list = [s.strip() for s in skills.split(",") if s.strip()]
             
+        from app.core.cache import ttl_cache
+
+        # Cache key construction for open jobs listing
+        cache_key = f"jobs:page={page}:limit={limit}:c={company_id}:l={location}:wm={wm}:jt={jt}:el={el}:sal={min_salary}-{max_salary}:s={skills}"
+        cached_val = ttl_cache.get(cache_key)
+        if cached_val is not None:
+            return cached_val
+
         # Query repository
         total_records, jobs = await self.job_repo.get_open_jobs_paginated(
             self.db,
@@ -435,7 +505,7 @@ class JobService:
         has_next = page < total_pages
         has_previous = page > 1
         
-        return {
+        res = {
             "page": page,
             "limit": limit,
             "total_records": total_records,
@@ -444,10 +514,15 @@ class JobService:
             "has_previous": has_previous,
             "jobs": jobs
         }
+        
+        ttl_cache.set(cache_key, res, ttl_seconds=20.0)
+        return res
 
     async def get_company_jobs(self, company_id: int, current_user: User) -> List[Job]:
         """
-        Retrieve all active job postings belonging to the specified company.
+        Retrieve all active job postings belonging to the specified company according to user authorization:
+        - Company Owner: receives all company jobs.
+        - Normal Recruiter: receives ONLY jobs assigned to them in job_recruiters.
         """
         company = await self.company_repo.get_by_id(self.db, company_id=company_id)
         if not company:
@@ -456,19 +531,19 @@ class JobService:
                 detail="Company profile not found."
             )
             
-        authorized = False
-        if current_user.role == UserRole.RECRUITER and current_user.company_id == company_id:
-            authorized = True
-        elif current_user.role == UserRole.COMPANY_OWNER and company.owner_id == current_user.id:
-            authorized = True
-            
-        if not authorized:
+        if current_user.company_id != company_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not authorized to view this company's job postings."
             )
             
-        return await self.job_repo.get_company_jobs(self.db, company_id=company_id)
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER or company.owner_id == current_user.id)
+        return await self.job_repo.get_company_jobs_for_user(
+            self.db,
+            company_id=company_id,
+            user_id=current_user.id,
+            is_owner=is_owner
+        )
 
     async def get_recruiter_jobs(self, current_user: User) -> List[Job]:
         """

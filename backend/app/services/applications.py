@@ -78,14 +78,26 @@ class ApplicationService:
             )
 
         # 6. Profile Completion Validation
-        if not current_user.profile:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Complete your profile before applying"
-            )
+        has_profile = ("profile" in current_user.__dict__ and current_user.__dict__["profile"] is not None)
+        if not has_profile:
+            from app.repositories.profiles import ProfileRepository
+            prof = await ProfileRepository().get_by_user_id(self.db, user_id=current_user.id)
+            if not prof:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Complete your profile before applying"
+                )
 
         # 7. Resume Validation
-        if not current_user.resume or not current_user.resume.id:
+        resume_id = None
+        if "resume" in current_user.__dict__ and current_user.__dict__["resume"] is not None:
+            resume_id = current_user.__dict__["resume"].id
+        else:
+            res_obj = await self.resume_repo.get_by_user_id(self.db, user_id=current_user.id)
+            if res_obj:
+                resume_id = res_obj.id
+
+        if not resume_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A valid resume is required before applying for a job."
@@ -108,7 +120,7 @@ class ApplicationService:
                 self.db,
                 user_id=current_user.id,
                 job_id=obj_in.job_id,
-                resume_id=current_user.resume.id
+                resume_id=resume_id
             )
         except IntegrityError:
             await self.db.rollback()
@@ -165,18 +177,26 @@ class ApplicationService:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied to this application record."
                 )
-        elif current_user.role == UserRole.RECRUITER:
-            if not current_user.company_id or app_record.job.company_id != current_user.company_id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: Job does not belong to your company."
-                )
-        elif current_user.role == UserRole.COMPANY_OWNER:
-            if not app_record.job.company or app_record.job.company.owner_id != current_user.id:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Access denied: You do not own the company hosting this job."
-                )
+        elif current_user.role in [UserRole.RECRUITER, UserRole.COMPANY_OWNER]:
+            is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+            if not is_owner:
+                if not current_user.company_id or app_record.job.company_id != current_user.company_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: Job does not belong to your company."
+                    )
+                is_assigned = await self.job_repo.is_recruiter_assigned(self.db, job_id=app_record.job_id, recruiter_id=current_user.id)
+                if not is_assigned:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: You are not assigned to this job posting."
+                    )
+            else:
+                if current_user.company_id and app_record.job.company_id != current_user.company_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: You do not own the company hosting this job."
+                    )
         elif current_user.role == UserRole.ADMIN:
             pass
         else:
@@ -248,15 +268,21 @@ class ApplicationService:
                     detail="Job Seekers are only allowed to withdraw applications."
                 )
         elif current_user.role in [UserRole.RECRUITER, UserRole.COMPANY_OWNER]:
-            # Recruiter/Owner can update status for jobs belonging to their company
-            if current_user.role == UserRole.RECRUITER:
+            is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+            if not is_owner:
                 if not current_user.company_id or app_record.job.company_id != current_user.company_id:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Access denied: Job does not belong to your company."
                     )
-            elif current_user.role == UserRole.COMPANY_OWNER:
-                if not app_record.job.company or app_record.job.company.owner_id != current_user.id:
+                is_assigned = await self.job_repo.is_recruiter_assigned(self.db, job_id=app_record.job_id, recruiter_id=current_user.id)
+                if not is_assigned:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied: You are not assigned to manage applications for this job posting."
+                    )
+            else:
+                if current_user.company_id and app_record.job.company_id != current_user.company_id:
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Access denied: You do not own the company hosting this job."
@@ -330,15 +356,22 @@ class ApplicationService:
                 detail="Job posting not found."
             )
 
-        # Verify company ownership
-        if current_user.role == UserRole.RECRUITER:
+        # Verify recruiter access authorization
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        if current_user.role == UserRole.RECRUITER and not is_owner:
             if not current_user.company_id or job.company_id != current_user.company_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied: Job does not belong to your company."
                 )
-        elif current_user.role == UserRole.COMPANY_OWNER:
-            if not job.company or job.company.owner_id != current_user.id:
+            is_assigned = await self.job_repo.is_recruiter_assigned(self.db, job_id=job_id, recruiter_id=current_user.id)
+            if not is_assigned:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied: You are not assigned to this job posting."
+                )
+        elif is_owner:
+            if current_user.company_id and job.company_id != current_user.company_id:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied: You do not own the company hosting this job."
@@ -348,3 +381,35 @@ class ApplicationService:
 
         skip = (page - 1) * limit
         return await self.app_repo.get_job_applications(self.db, job_id=job_id, skip=skip, limit=limit)
+
+    async def get_company_applications(
+        self,
+        current_user: User,
+        *,
+        page: int = 1,
+        limit: int = 10
+    ) -> tuple[List[Application], int]:
+        """
+        Retrieve paginated applications for the logged-in recruiter's company.
+        - Company Owner: receives all applications across all company jobs.
+        - Normal Recruiter: receives applications ONLY for jobs assigned to them in job_recruiters.
+        """
+        if current_user.role not in [UserRole.RECRUITER, UserRole.COMPANY_OWNER, UserRole.ADMIN]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: Only Recruiters can view company applications."
+            )
+
+        if not current_user.company_id:
+            return [], 0
+
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        skip = (page - 1) * limit
+        return await self.app_repo.get_company_applications_for_user(
+            self.db,
+            company_id=current_user.company_id,
+            user_id=current_user.id,
+            is_owner=is_owner,
+            skip=skip,
+            limit=limit
+        )

@@ -37,15 +37,34 @@ class CompanyService:
 
     async def create_company(self, obj_in: CompanyCreate, owner_id: int) -> Company:
         """
-        Register a new company profile.
+        Register a new company profile and link the owner.
         """
+        # Check if owner already belongs to a company
+        owner = await self.user_repo.get_by_id(self.db, user_id=owner_id)
+        if owner and owner.company_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User is already associated with a company."
+            )
+
         code = await self.generate_unique_code()
-        return await self.company_repo.create(
+        created_company = await self.company_repo.create(
             self.db, 
             obj_in=obj_in, 
             owner_id=owner_id, 
             company_code=code
         )
+
+        # Link owner user account to company
+        if owner:
+            owner.company_id = created_company.id
+            self.db.add(owner)
+            await self.db.commit()
+            await self.db.refresh(owner)
+            from app.auth.dependencies import clear_user_cache
+            clear_user_cache(owner.id)
+
+        return created_company
 
     async def get_company(self, company_id: int) -> Company:
         """
@@ -159,6 +178,15 @@ class CompanyService:
         Remove a recruiter from the company by clearing their company_id link.
         - Enforces company ownership.
         """
+        # Verify company ownership first
+        await self.verify_company_owner(company_id, owner_id)
+
+        if recruiter_id == owner_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Company Owner cannot be removed from the company."
+            )
+
         # Fetch and verify recruiter belongs to company
         recruiter = await self.get_company_recruiter_detail(
             company_id=company_id,
@@ -171,4 +199,6 @@ class CompanyService:
         self.db.add(recruiter)
         await self.db.commit()
         await self.db.refresh(recruiter)
+        from app.auth.dependencies import clear_user_cache
+        clear_user_cache(recruiter.id)
         return recruiter

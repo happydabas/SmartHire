@@ -66,6 +66,7 @@ class UserResponse(UserBase):
     role: UserRole
     status: UserStatus
     company_id: Optional[int] = None
+    is_owner: bool = False
     created_at: datetime
     updated_at: datetime
 

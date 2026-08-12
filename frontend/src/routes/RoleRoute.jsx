@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/constants/routes';
 
-export const RoleRoute = ({ children, allowedRoles }) => {
+export const RoleRoute = ({ children, allowedRoles, requireOwner = false }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -18,7 +18,19 @@ export const RoleRoute = ({ children, allowedRoles }) => {
     return <Navigate to={ROUTES.LOGIN} replace />;
   }
 
-  const hasAccess = allowedRoles.includes(user.role);
+  // Determine owner status: check all possible indicators from the user object
+  const isOwner = Boolean(
+    user.is_owner === true ||
+    user.role === 'company_owner' ||
+    user.owned_company ||
+    (user.company && user.company.owner_id === user.id)
+  );
+
+  // Check role-based access: user's role must be in allowedRoles OR they are an owner
+  const roleAllowed = allowedRoles.includes(user.role) || isOwner;
+
+  // If requireOwner is true, user must also be an owner
+  const hasAccess = roleAllowed && (!requireOwner || isOwner);
 
   // Support both component wrapper and nested layout routes
   return hasAccess ? (children ? children : <Outlet />) : <Navigate to={ROUTES.UNAUTHORIZED} replace />;
