@@ -77,10 +77,10 @@ class CompanyInvitationService:
             company_id=company_id
         )
 
-        token = secrets.token_urlsafe(32)
         expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
 
-        if existing_invitation:
+        if existing_invitation and existing_invitation.invitation_token:
+            token = existing_invitation.invitation_token
             invitation = await self.invitation_repo.update_token(
                 self.db,
                 db_obj=existing_invitation,
@@ -88,6 +88,7 @@ class CompanyInvitationService:
                 expires_at=expires_at
             )
         else:
+            token = secrets.token_urlsafe(32)
             invitation = await self.invitation_repo.create(
                 self.db,
                 company_id=company_id,
