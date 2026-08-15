@@ -189,13 +189,11 @@ export function Dashboard() {
   };
 
   const getProcessedJobs = () => {
-    // Merge real database open jobs with mock screenshot jobs
-    const combined = [...recommendedJobs, ...MOCK_RECOMMENDED_JOBS];
-    // Remove duplicates by company name / title
+    const combined = Array.isArray(recommendedJobs) ? recommendedJobs : [];
     const seen = new Set();
     const unique = [];
     combined.forEach(j => {
-      const key = `${j.title}-${j.company?.name}`;
+      const key = `${j.title}-${j.company?.name || j.company_name}`;
       if (!seen.has(key)) {
         seen.add(key);
         unique.push(j);
