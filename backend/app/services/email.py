@@ -52,12 +52,23 @@ class EmailService:
         if not self.username or not self.password:
             raise ValueError("SMTP_USERNAME or SMTP_PASSWORD is not configured.")
 
-        with smtplib.SMTP(self.host, self.port, timeout=15) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(self.username, self.password)
-            server.send_message(msg)
+        if self.port == 465:
+            with smtplib.SMTP_SSL(self.host, self.port, timeout=15) as server:
+                server.login(self.username, self.password)
+                server.send_message(msg)
+        else:
+            try:
+                with smtplib.SMTP(self.host, self.port, timeout=8) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(self.username, self.password)
+                    server.send_message(msg)
+            except Exception as first_err:
+                logger.warning("SMTP STARTTLS connection on port %s failed (%s). Retrying with SSL on port 465...", self.port, first_err)
+                with smtplib.SMTP_SSL(self.host, 465, timeout=15) as server:
+                    server.login(self.username, self.password)
+                    server.send_message(msg)
 
     async def send_email(self, to_email: str, subject: str, html_content: str, text_content: str) -> None:
         """
