@@ -70,36 +70,37 @@ class CompanyInvitationService:
                 detail="This recruiter is already a member of your company."
             )
 
-        # 4. Prevent duplicate pending invitations for the same email and company
+        # 4. If an existing invitation is present for this email and company, refresh its token instead of failing
         existing_invitation = await self.invitation_repo.get_pending_by_email_and_company(
             self.db, 
             email=recruiter_email, 
             company_id=company_id
         )
-        if existing_invitation:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="A pending invitation already exists for this email address and company."
-            )
 
-        # 5. Generate unique secure token and 7-day expiration
         token = secrets.token_urlsafe(32)
         expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
 
-        # 6. Persist invitation record
-        invitation = await self.invitation_repo.create(
-            self.db,
-            company_id=company_id,
-            recruiter_email=recruiter_email,
-            token=token,
-            expires_at=expires_at
-        )
+        if existing_invitation:
+            invitation = await self.invitation_repo.update_token(
+                self.db,
+                db_obj=existing_invitation,
+                token=token,
+                expires_at=expires_at
+            )
+        else:
+            invitation = await self.invitation_repo.create(
+                self.db,
+                company_id=company_id,
+                recruiter_email=recruiter_email,
+                token=token,
+                expires_at=expires_at
+            )
 
-        # 7. Fetch owner details for invitation email
+        # 5. Fetch owner details for invitation email
         owner = await self.user_repo.get_by_id(self.db, user_id=owner_id)
         owner_name = owner.name if owner else None
 
-        # 8. Send invitation email via SMTP (best-effort, non-blocking for invitation creation).
+        # 6. Send invitation email via SMTP (best-effort, non-blocking for invitation creation).
         try:
             await self.email_service.send_recruiter_invitation_email(
                 to_email=recruiter_email,
@@ -163,11 +164,8 @@ class CompanyInvitationService:
             )
 
         status_val = getattr(invitation.status, "value", str(invitation.status)).lower()
-        if status_val not in ["pending", "expired"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot cancel invitation with status '{status_val}'."
-            )
+        if status_val == "cancelled":
+            return invitation
 
         return await self.invitation_repo.update_status(
             self.db,

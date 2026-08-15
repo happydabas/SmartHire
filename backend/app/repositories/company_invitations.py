@@ -94,3 +94,22 @@ class CompanyInvitationRepository:
         await db.commit()
         await db.refresh(db_obj)
         return db_obj
+
+    async def update_token(
+        self,
+        db: AsyncSession,
+        *,
+        db_obj: CompanyInvitation,
+        token: str,
+        expires_at: datetime.datetime
+    ) -> CompanyInvitation:
+        """
+        Refresh and update the invitation token and expiration for re-sending.
+        """
+        db_obj.invitation_token = token
+        db_obj.expires_at = expires_at
+        db_obj.status = InvitationStatus.PENDING
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
