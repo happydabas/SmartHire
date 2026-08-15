@@ -23,24 +23,41 @@ import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import Badge from '@/components/ui/Badge';
 import SearchableSelect from '@/components/ui/SearchableSelect';
+import PageHeader from '@/components/ui/PageHeader';
 import SkillChip from '@/components/ui/SkillChip';
 
 // Define the static master catalog matching exactly what was seeded in the DB
 export const MASTER_SKILLS_CATALOG = [
+  // Frontend
   { id: 1, skill_name: "React", category: "Frontend" },
   { id: 2, skill_name: "Angular", category: "Frontend" },
   { id: 3, skill_name: "Vue.js", category: "Frontend" },
   { id: 4, skill_name: "HTML5 & CSS3", category: "Frontend" },
   { id: 5, skill_name: "Tailwind CSS", category: "Frontend" },
+  { id: 19, skill_name: "TypeScript", category: "Frontend" },
+  { id: 20, skill_name: "Next.js", category: "Frontend" },
+
+  // Backend
   { id: 6, skill_name: "FastAPI", category: "Backend" },
   { id: 7, skill_name: "Node.js", category: "Backend" },
   { id: 8, skill_name: "Django", category: "Backend" },
   { id: 9, skill_name: "Flask", category: "Backend" },
   { id: 10, skill_name: "Express.js", category: "Backend" },
+  { id: 21, skill_name: "Python", category: "Backend" },
+  { id: 22, skill_name: "Java", category: "Backend" },
+  { id: 23, skill_name: "Go", category: "Backend" },
+  { id: 25, skill_name: "GraphQL", category: "Backend" },
+  { id: 26, skill_name: "Rust", category: "Backend" },
+  { id: 27, skill_name: "C++", category: "Backend" },
+
+  // Database
   { id: 11, skill_name: "PostgreSQL", category: "Database" },
   { id: 12, skill_name: "MongoDB", category: "Database" },
   { id: 13, skill_name: "Redis", category: "Database" },
   { id: 14, skill_name: "MySQL", category: "Database" },
+  { id: 24, skill_name: "SQLite", category: "Database" },
+
+  // DevOps & Cloud
   { id: 15, skill_name: "Docker", category: "DevOps" },
   { id: 16, skill_name: "Kubernetes", category: "DevOps" },
   { id: 17, skill_name: "AWS", category: "DevOps" },
@@ -248,21 +265,20 @@ export function SkillsPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header and alerts */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Skillset Credentials</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your cataloged technical skills, proficiency levels, and experience metrics.</p>
-        </div>
-
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleOpenAddForm}
-          className="rounded-2xl shadow-lg flex items-center gap-2 font-bold shrink-0 self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" /> Add Skill
-        </Button>
-      </div>
+      <PageHeader
+        title="Skillset Credentials"
+        subtitle="Manage your cataloged technical skills, proficiency levels, and experience metrics."
+        actions={
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleOpenAddForm}
+            className="rounded-2xl shadow-lg flex items-center gap-2 font-bold shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add Skill
+          </Button>
+        }
+      />
 
       {error && (
         <div className="flex items-center gap-3 p-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">

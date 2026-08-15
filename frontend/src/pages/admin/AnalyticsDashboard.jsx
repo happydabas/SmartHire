@@ -12,6 +12,7 @@ import ExportReportsButton from '@/components/admin/analytics/ExportReportsButto
 import AnalyticsSkeleton from '@/components/admin/analytics/AnalyticsSkeleton';
 import { Users, Building, Briefcase, FileText, AlertCircle, RotateCcw } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 
 export function AnalyticsDashboard() {
   const [data, setData] = useState(null);
@@ -44,21 +45,16 @@ export function AnalyticsDashboard() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Title block with Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-            Analytics & Reports
-          </h1>
-          <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-            Monitor registration trends, job openings, and applications volume activity.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <AnalyticsFilters value={dateRange} onChange={setDateRange} />
-          <ExportReportsButton onExport={handleExport} />
-        </div>
-      </div>
+      <PageHeader
+        title="Analytics & Reports"
+        subtitle="Monitor registration trends, job openings, and applications volume activity."
+        actions={
+          <div className="flex items-center gap-3">
+            <AnalyticsFilters value={dateRange} onChange={setDateRange} />
+            <ExportReportsButton onExport={handleExport} />
+          </div>
+        }
+      />
 
       {error ? (
         <div className="flex flex-col items-center justify-center p-16 text-center bg-white border border-rose-100 rounded-3xl dark:bg-slate-900 dark:border-rose-950/20">

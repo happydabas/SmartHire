@@ -73,9 +73,9 @@ export function NotificationItem({ notification, onClose }) {
       tabIndex="0"
       onClick={handleItemClick}
       onKeyDown={handleKeyDown}
-      className={`flex gap-3.5 p-4 text-left transition-all duration-200 outline-none hover:bg-slate-50/80 focus-visible:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-500 relative group cursor-pointer border-b border-slate-100/50 ${
+      className={`flex gap-3.5 p-4 text-left transition-all duration-200 outline-none hover:bg-slate-50/80 dark:hover:bg-slate-800/60 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 focus-visible:ring-2 focus-visible:ring-blue-500 relative group cursor-pointer border-b border-slate-100/50 dark:border-slate-800/80 ${
         !notification.is_read
-          ? 'bg-blue-50/15 border-l-4 border-blue-500 pl-3'
+          ? 'bg-blue-50/20 dark:bg-blue-950/40 border-l-4 border-blue-500 dark:border-blue-400 pl-3'
           : 'border-l-4 border-transparent pl-3'
       }`}
       aria-label={`${notification.title}: ${notification.message}. ${
@@ -92,13 +92,13 @@ export function NotificationItem({ notification, onClose }) {
 
       {/* Main Content Details */}
       <div className="flex-1 min-w-0 pr-6">
-        <h4 className={`text-xs leading-tight truncate ${!notification.is_read ? 'font-extrabold text-slate-900' : 'font-bold text-slate-700'}`}>
+        <h4 className={`text-xs sm:text-sm leading-tight truncate ${!notification.is_read ? 'font-black text-slate-900 dark:text-white' : 'font-bold text-slate-700 dark:text-slate-200'}`}>
           {notification.title}
         </h4>
-        <p className={`text-xs mt-1 leading-normal break-words ${!notification.is_read ? 'text-slate-600 font-medium' : 'text-slate-500'}`}>
+        <p className={`text-xs mt-1 leading-relaxed break-words ${!notification.is_read ? 'text-slate-700 dark:text-slate-300 font-medium' : 'text-slate-500 dark:text-slate-400'}`}>
           {notification.message}
         </p>
-        <span className="text-[10px] font-bold text-slate-400 mt-2 block">
+        <span className="text-[10.5px] font-bold text-slate-400 dark:text-slate-500 mt-2 block">
           {formatNotificationTimestamp(notification.created_at)}
         </span>
       </div>
@@ -110,15 +110,15 @@ export function NotificationItem({ notification, onClose }) {
       >
         {/* Simple Blue Unread Dot */}
         {!notification.is_read && (
-          <span className="w-2 h-2 rounded-full bg-blue-600 ring-4 ring-blue-100 group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity duration-150" />
+          <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400 ring-4 ring-blue-100 dark:ring-blue-950 group-hover:opacity-0 group-focus-within:opacity-0 transition-opacity duration-150" />
         )}
 
         {/* Check/Delete Controls Container */}
-        <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-1 bg-white border border-slate-100 shadow-md p-0.5 rounded-lg transition-opacity duration-150">
+        <div className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 flex items-center gap-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-md p-1 rounded-xl transition-opacity duration-150">
           {!notification.is_read && (
             <button
               onClick={() => markAsRead(notification.id)}
-              className="action-btn p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
+              className="action-btn p-1 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 rounded-lg transition-colors outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
               title="Mark as read"
               aria-label="Mark as read"
             >
@@ -127,7 +127,7 @@ export function NotificationItem({ notification, onClose }) {
           )}
           <button
             onClick={() => deleteNotification(notification.id)}
-            className="action-btn p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors outline-none focus-visible:ring-1 focus-visible:ring-red-500"
+            className="action-btn p-1 text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition-colors outline-none focus-visible:ring-1 focus-visible:ring-red-500"
             title="Delete notification"
             aria-label="Delete notification"
           >

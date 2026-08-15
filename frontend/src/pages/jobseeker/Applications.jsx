@@ -11,8 +11,10 @@ import {
   ArrowRight,
   User,
   XCircle,
-  Building
+  Building,
+  Check
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +22,7 @@ import { notificationService } from '@/services/notificationService';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
+import PageHeader from '@/components/ui/PageHeader';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
@@ -54,6 +57,11 @@ export function ApplicationsPage() {
   // Withdrawal confirmation modal states
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [appToWithdraw, setAppToWithdraw] = useState(null);
+
+  // Application details modal states
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [selectedAppForDetails, setSelectedAppForDetails] = useState(null);
+  const [modalHistory, setModalHistory] = useState([]);
 
   const fetchApplicationsList = async () => {
     try {
@@ -133,8 +141,26 @@ export function ApplicationsPage() {
     }
   };
 
-  const handleCardClick = (applicationId) => {
-    navigate(`/applications/${applicationId}`);
+  const handleCardClick = async (app) => {
+    if (!app) return;
+    setSelectedAppForDetails(app);
+    setIsDetailsOpen(true);
+    try {
+      const historyLogs = await applicationService.getApplicationStatusHistory(app.id);
+      setModalHistory(historyLogs || []);
+    } catch (err) {
+      console.error("Failed to load status history:", err);
+      setModalHistory([]);
+    }
+  };
+
+  const handleViewJobPost = (app) => {
+    setIsDetailsOpen(false);
+    let targetJobId = app?.job?.id || app?.job_id || app?.id;
+    if (targetJobId === undefined || targetJobId === null || targetJobId === '') {
+      targetJobId = 1;
+    }
+    navigate(`/jobs/${targetJobId}`);
   };
 
   // Maps application status to UI Badge color variant
@@ -211,10 +237,10 @@ export function ApplicationsPage() {
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Job Applications</h1>
-          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Review, filter, and track status updates for all applications you submitted to employers.</p>
-        </div>
+        <PageHeader
+          title="Job Applications"
+          subtitle="Review, filter, and track status updates for all applications you submitted to employers."
+        />
 
         {error && (
           <div className="flex items-center gap-3 p-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">
@@ -378,7 +404,7 @@ export function ApplicationsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 
                           className="font-semibold text-slate-800 text-lg hover:text-blue-600 cursor-pointer transition-colors leading-snug truncate max-w-[220px] dark:text-white"
-                          onClick={() => handleCardClick(app.id)}
+                          onClick={() => handleCardClick(app)}
                           title={app.job?.title}
                         >
                           {app.job?.title || 'Unknown Role'}
@@ -447,8 +473,8 @@ export function ApplicationsPage() {
                   )}
 
                   <button
-                    onClick={() => handleCardClick(app.id)}
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline transition-all"
+                    onClick={() => handleCardClick(app)}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1 hover:underline transition-all cursor-pointer"
                   >
                     View Details <ArrowRight className="w-3.5 h-3.5" />
                   </button>
@@ -494,6 +520,187 @@ export function ApplicationsPage() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Application Details Modal */}
+      <Modal
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
+        title="Application Details"
+      >
+        {selectedAppForDetails && (
+          <div className="space-y-6">
+            {/* Job & Company Header Card */}
+            <div className="p-4 bg-slate-50 dark:bg-[#0c0d14] rounded-2xl border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-4">
+              <div className="space-y-1 min-w-0">
+                <h3 className="text-base font-bold text-slate-800 dark:text-white truncate">
+                  {selectedAppForDetails.job?.title || 'Unknown Role'}
+                </h3>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 truncate">
+                  {selectedAppForDetails.job?.company_name || 'Unknown Company'}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                  <span className="flex items-center gap-1 text-xs text-slate-400 font-medium">
+                    <MapPin className="w-3.5 h-3.5" />
+                    {selectedAppForDetails.job?.location || 'Location Not Specified'}
+                  </span>
+                  <Badge variant={getStatusVariant(selectedAppForDetails.status)} className="capitalize text-[10px] font-bold">
+                    {selectedAppForDetails.status}
+                  </Badge>
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleViewJobPost(selectedAppForDetails)}
+                className="rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+              >
+                <span>View Job</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Button>
+            </div>
+
+            {/* Pipeline History Timeline Section (Matching Recruiter UI) */}
+            <div className="space-y-4 pt-1">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                <h4 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Hiring Pipeline History
+                </h4>
+                <span className="text-[10px] font-bold text-slate-400">
+                  Real-time status
+                </span>
+              </div>
+
+              {/* Status Alert for Rejected/Withdrawn */}
+              {selectedAppForDetails.status?.toLowerCase() === 'rejected' && (
+                <div className="p-3 bg-rose-50 dark:bg-rose-955/20 border border-rose-200 dark:border-rose-900 rounded-xl text-xs text-rose-600 font-semibold flex items-center gap-2">
+                  <XCircle className="w-4 h-4 shrink-0" />
+                  <span>The hiring team has closed consideration for this application.</span>
+                </div>
+              )}
+              {selectedAppForDetails.status?.toLowerCase() === 'withdrawn' && (
+                <div className="p-3 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-500 font-semibold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-slate-400" />
+                  <span>You withdrew this job application.</span>
+                </div>
+              )}
+
+              <div className="space-y-6 pt-2">
+                {[
+                  { key: 'applied', label: 'Applied', defaultSub: 'Application submitted by candidate' },
+                  { key: 'screening', label: 'Screening', defaultSub: 'Resume & profile screening' },
+                  { key: 'interview', label: 'Technical Interview', defaultSub: 'Technical assessment & discussion' },
+                  { key: 'selected', label: 'HR Interview', defaultSub: 'Final interview & selection' },
+                  { key: 'offer', label: 'Offer', defaultSub: 'Offer letter extended' },
+                  { key: 'hired', label: 'Hired', defaultSub: 'Candidate hired' }
+                ].map((stage, idx, arr) => {
+                  const normStatus = (selectedAppForDetails.status || 'applied').toLowerCase();
+                  let normalizedCurrent = 'applied';
+                  if (['applied', 'submitted'].includes(normStatus)) normalizedCurrent = 'applied';
+                  else if (['screening', 'under review', 'review', 'shortlisted'].includes(normStatus)) normalizedCurrent = 'screening';
+                  else if (['interview', 'technical round', 'technical interview'].includes(normStatus)) normalizedCurrent = 'interview';
+                  else if (['selected', 'hr round', 'hr interview'].includes(normStatus)) normalizedCurrent = 'selected';
+                  else if (['offer', 'extended'].includes(normStatus)) normalizedCurrent = 'offer';
+                  else if (['hired', 'accepted'].includes(normStatus)) normalizedCurrent = 'hired';
+
+                  const stageKeys = arr.map(s => s.key);
+                  const currentIndex = stageKeys.indexOf(normalizedCurrent) !== -1 ? stageKeys.indexOf(normalizedCurrent) : 0;
+                  const isRejected = normStatus === 'rejected';
+                  const isWithdrawn = normStatus === 'withdrawn';
+
+                  const isCompleted = idx < currentIndex && !isRejected && !isWithdrawn;
+                  const isCurrent = idx === currentIndex && !isRejected && !isWithdrawn;
+                  const isUpcoming = idx > currentIndex || isRejected || isWithdrawn;
+
+                  const historyLog = modalHistory.find(h => (h.status || '').toLowerCase() === stage.key);
+                  const timestamp = historyLog?.updated_at || (stage.key === 'applied' ? selectedAppForDetails.applied_at : (isCurrent ? selectedAppForDetails.updated_at : null));
+
+                  let formattedTime = '';
+                  if (timestamp) {
+                    try {
+                      const date = new Date(timestamp);
+                      if (!isNaN(date.getTime())) {
+                        formattedTime = new Intl.DateTimeFormat('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                          hour: 'numeric',
+                          minute: 'numeric',
+                          hour12: true
+                        }).format(date);
+                      }
+                    } catch (e) {
+                      formattedTime = '';
+                    }
+                  }
+
+                  let subText = stage.defaultSub;
+                  if (historyLog?.recruiter_name) {
+                    subText = `Moved by ${historyLog.recruiter_name}`;
+                  } else if (stage.key === 'applied') {
+                    subText = 'Application submitted by candidate';
+                  } else if (isUpcoming) {
+                    subText = stage.key === 'interview' || stage.key === 'selected' ? 'Not scheduled yet' : 'Pending';
+                  }
+
+                  return (
+                    <div key={stage.key} className="flex items-start gap-4 relative">
+                      {/* Timeline Vertical Connecting Line */}
+                      {idx < arr.length - 1 && (
+                        <div 
+                          className={`absolute left-[11px] top-6 bottom-0 w-0.5 z-0 ${
+                            idx < currentIndex && !isRejected && !isWithdrawn ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-800'
+                          }`}
+                        />
+                      )}
+
+                      {/* Circle Node Container */}
+                      <div className="z-10 shrink-0 w-6 h-6 flex items-center justify-center mt-0.5">
+                        {isCompleted ? (
+                          <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-sm">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                        ) : isCurrent ? (
+                          <div className="w-6 h-6 rounded-full bg-blue-600 ring-4 ring-blue-100 dark:ring-blue-950 flex items-center justify-center shadow-sm">
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          </div>
+                        ) : (
+                          <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900" />
+                        )}
+                      </div>
+
+                      {/* Stage Text Content */}
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className={`text-xs font-black ${isCurrent ? 'text-slate-900 dark:text-white' : (isCompleted ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500')}`}>
+                            {stage.label}
+                          </h4>
+                          {isCurrent && (
+                            <span className="text-[10px] font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 px-2 py-0.5 rounded-md">
+                              Current Stage
+                            </span>
+                          )}
+                        </div>
+
+                        {formattedTime && (
+                          <p className="text-[10.5px] font-bold text-slate-400 dark:text-slate-500">
+                            {formattedTime}
+                          </p>
+                        )}
+
+                        <p className={`text-xs font-semibold ${isCurrent || isCompleted ? 'text-slate-600 dark:text-slate-400' : 'text-slate-400 dark:text-slate-500 italic'}`}>
+                          {subText}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+          </div>
+        )}
       </Modal>
     </div>
   );

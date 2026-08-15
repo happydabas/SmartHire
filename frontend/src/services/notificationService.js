@@ -1,67 +1,36 @@
 import api from './api/axios';
 import { API_ENDPOINTS } from './api/endpoints';
 
-// Initial dummy notifications to populate the mock database on first load
-const INITIAL_MOCK_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'APPLICATION',
-    title: 'Application Shortlisted',
-    message: 'Congratulations! Your application for Senior React Developer has been shortlisted by Google.',
-    is_read: false,
-    created_at: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5 mins ago
-  },
-  {
-    id: 2,
-    type: 'INTERVIEW',
-    title: 'Interview Scheduled',
-    message: 'Your panel interview for Frontend Engineer at Meta is scheduled for Monday at 10:00 AM.',
-    is_read: false,
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-  },
-  {
-    id: 3,
-    type: 'STATUS_UPDATE',
-    title: 'Profile View',
-    message: 'A recruiter from Microsoft has viewed your profile and resume.',
-    is_read: true,
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Yesterday
-  },
-  {
-    id: 4,
-    type: 'JOB',
-    title: 'New Matching Job',
-    message: 'A new Senior Frontend Engineer role matching your preferences was posted by Stripe.',
-    is_read: true,
-    created_at: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days ago
-  },
-  {
-    id: 5,
-    type: 'SYSTEM',
-    title: 'System Update',
-    message: 'SmartHire platform updates are scheduled for Sunday at 3:00 AM. Expect brief down times.',
-    is_read: false,
-    created_at: new Date(Date.now() - 15 * 1000).toISOString(), // 15 seconds ago
-  }
-];
+// Helper to get current logged in user ID
+const getCurrentUserId = () => {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const u = JSON.parse(userStr);
+      return u.id || u.email || 'guest';
+    }
+  } catch (e) {}
+  return 'guest';
+};
 
-// Helper to retrieve notifications from local storage
-const getLocalStorageNotifications = () => {
-  const data = localStorage.getItem('smarthire_mock_notifications');
+// Helper to retrieve notifications from local storage scoped by user ID
+const getLocalStorageNotifications = (userId = getCurrentUserId()) => {
+  const key = `smarthire_notifications_${userId}`;
+  const data = localStorage.getItem(key);
   if (!data) {
-    localStorage.setItem('smarthire_mock_notifications', JSON.stringify(INITIAL_MOCK_NOTIFICATIONS));
-    return INITIAL_MOCK_NOTIFICATIONS;
+    return [];
   }
   try {
     return JSON.parse(data);
   } catch (e) {
-    return INITIAL_MOCK_NOTIFICATIONS;
+    return [];
   }
 };
 
-// Helper to save notifications to local storage
-const saveLocalStorageNotifications = (notifications) => {
-  localStorage.setItem('smarthire_mock_notifications', JSON.stringify(notifications));
+// Helper to save notifications to local storage scoped by user ID
+const saveLocalStorageNotifications = (notifications, userId = getCurrentUserId()) => {
+  const key = `smarthire_notifications_${userId}`;
+  localStorage.setItem(key, JSON.stringify(notifications));
 };
 
 export const notificationService = {

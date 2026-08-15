@@ -35,7 +35,7 @@ export const ApplicantFilters = ({
         options={jobOptions}
         placeholder="All Jobs"
         disabled={disabled}
-        className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl"
+        className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl"
       />
 
       {/* Stage Filter */}
@@ -43,11 +43,11 @@ export const ApplicantFilters = ({
         id="filter-stage-select"
         label="Filter by Stage"
         value={selectedStage}
-        onChange={(e) => onFilterChange?.('stage', e.target.value)}
+        onChange={(e) => onFilterChange?.('status', e.target.value)}
         options={stageOptions}
         placeholder="All Stages"
         disabled={disabled}
-        className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl"
+        className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl"
       />
 
       {/* Date Filter */}
@@ -58,7 +58,7 @@ export const ApplicantFilters = ({
         onChange={(e) => onFilterChange?.('dateFilter', e.target.value)}
         options={dateOptions}
         disabled={disabled}
-        className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl"
+        className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl"
       />
 
       {/* Custom Date Inputs */}
@@ -72,7 +72,7 @@ export const ApplicantFilters = ({
               value={startDate}
               onChange={(e) => onFilterChange?.('startDate', e.target.value)}
               disabled={disabled}
-              className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl py-1.5"
+              className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl py-1.5"
             />
           </div>
           <div className="flex-grow">
@@ -83,7 +83,7 @@ export const ApplicantFilters = ({
               value={endDate}
               onChange={(e) => onFilterChange?.('endDate', e.target.value)}
               disabled={disabled}
-              className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl py-1.5"
+              className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl py-1.5"
             />
           </div>
         </div>

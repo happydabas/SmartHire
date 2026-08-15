@@ -6,6 +6,7 @@ import JobStatusBadge from '@/components/admin/jobs/JobStatusBadge';
 import Button from '@/components/ui/Button';
 import { formatDate } from '@/utils';
 import SkeletonProfile from '@/components/common/SkeletonProfile';
+import PageHeader from '@/components/ui/PageHeader';
 
 export function JobDetails() {
   const { id } = useParams();
@@ -79,13 +80,11 @@ export function JobDetails() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Back button */}
-      <button
-        onClick={() => navigate('/admin/jobs')}
-        className="flex items-center gap-2 text-xs font-black text-slate-500 hover:text-slate-700 outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded-md py-1 pr-3 transition-colors dark:text-slate-450 dark:hover:text-slate-300"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to Jobs Directory
-      </button>
+      <PageHeader
+        title="Job Moderation Review"
+        subtitle={`Inspect posting details, requirements, and status for ${job.title}`}
+        backUrl="/admin/jobs"
+      />
 
       {/* Main Header Card */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-slate-900 dark:border-slate-800 flex flex-col md:flex-row gap-6 items-start md:items-center">

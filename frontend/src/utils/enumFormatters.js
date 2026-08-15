@@ -29,6 +29,13 @@ const WORK_MODE_LABELS = {
   'REMOTE': 'Remote',
   'HYBRID': 'Hybrid',
   'ONSITE': 'Onsite',
+  'ON_SITE': 'Onsite',
+  'On-Site': 'Onsite',
+  'On_Site': 'Onsite',
+  'On site': 'Onsite',
+  'on site': 'Onsite',
+  'on_site': 'Onsite',
+  'onsite': 'Onsite',
   // Legacy values
   'Remote': 'Remote',
   'Hybrid': 'Hybrid',
@@ -70,7 +77,12 @@ export const formatExperienceLevel = (value) => {
 export const formatWorkMode = (value) => {
   if (!value) return '';
   const str = typeof value === 'string' ? value : (value?.value || String(value));
-  return WORK_MODE_LABELS[str] || str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  const normalizedKey = str.replace(/[-_]/g, '').toLowerCase().trim();
+  if (normalizedKey === 'onsite') return 'Onsite';
+  if (normalizedKey === 'remote') return 'Remote';
+  if (normalizedKey === 'hybrid') return 'Hybrid';
+  if (WORK_MODE_LABELS[str]) return WORK_MODE_LABELS[str];
+  return str.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 };
 
 /**

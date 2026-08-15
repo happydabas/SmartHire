@@ -13,7 +13,8 @@ import {
   Inbox,
   Sparkles,
   Award,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react';
 import { applicationService } from '@/services/applications/applicationService';
 import { formatDate } from '@/utils/formatDate';
@@ -23,9 +24,11 @@ import DataTable from '@/components/ui/DataTable';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import Modal from '@/components/ui/Modal';
 import EmptyState from '@/components/common/EmptyState';
 import EmptyApplicants from '@/components/common/EmptyApplicants';
 import Toast from '@/components/ui/Toast';
+import PageHeader from '@/components/ui/PageHeader';
 import Card from '@/components/ui/Card';
 import Avatar from '@/components/ui/Avatar';
 import ActionMenu from '@/components/ui/ActionMenu';
@@ -62,6 +65,12 @@ export function Applicants() {
   
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('info');
+
+  // Resume PDF Modal state
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+  const [selectedAppForResume, setSelectedAppForResume] = useState(null);
+  const [pdfViewUrl, setPdfViewUrl] = useState(null);
+  const [resumeLoading, setResumeLoading] = useState(false);
 
   // Initial jobs list load (for the job filter dropdown)
   useEffect(() => {
@@ -240,12 +249,36 @@ export function Applicants() {
     return status;
   };
 
-  const handleViewResume = (resume) => {
-    if (resume?.resume_url_or_path) {
-      window.open(resume.resume_url_or_path, '_blank');
-    } else {
+  const handleViewResume = async (row) => {
+    if (!row?.id) {
       triggerToast('No resume file associated with this candidate profile.', 'warning');
+      return;
     }
+
+    try {
+      setSelectedAppForResume(row);
+      setIsResumeModalOpen(true);
+      setResumeLoading(true);
+      if (pdfViewUrl) URL.revokeObjectURL(pdfViewUrl);
+      setPdfViewUrl(null);
+
+      const url = await applicationService.getResumeFileUrl(row.id);
+      setPdfViewUrl(url);
+    } catch (err) {
+      console.error("Failed to load applicant resume PDF:", err);
+      triggerToast('Failed to load candidate PDF resume document.', 'error');
+    } finally {
+      setResumeLoading(false);
+    }
+  };
+
+  const handleCloseResumeModal = () => {
+    setIsResumeModalOpen(false);
+    if (pdfViewUrl) {
+      URL.revokeObjectURL(pdfViewUrl);
+    }
+    setPdfViewUrl(null);
+    setSelectedAppForResume(null);
   };
 
   // Actions configurations
@@ -275,16 +308,18 @@ export function Applicants() {
       render: (row) => {
         const candidate = row.candidate || {};
         return (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3.5 py-1 group-hover:text-blue-600 transition-colors">
             <Avatar
               src={candidate.profile?.profile_picture}
               name={candidate.name}
               size="md"
             />
-            <div className="flex flex-col">
-              <span className="font-bold text-slate-800 text-sm leading-snug">{candidate.name}</span>
-              <span className="text-[10.5px] text-slate-400 font-semibold flex items-center gap-1 mt-0.5">
-                <Mail className="w-3 h-3 shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 text-sm leading-snug truncate">
+                {candidate.name}
+              </span>
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1.5 mt-0.5 truncate">
+                <Mail className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
                 {candidate.email}
               </span>
             </div>
@@ -296,17 +331,20 @@ export function Applicants() {
       header: 'Applied Job',
       key: 'job.title',
       render: (row) => (
-        <span className="text-xs font-semibold text-slate-700">{row.job?.title || 'Unknown Job'}</span>
+        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate max-w-[220px]">
+          {row.job?.title || 'Unknown Job'}
+        </span>
       )
     },
     {
-      header: 'Match Score',
+      header: 'Match Score (Soon)',
       key: 'matchScore',
       align: 'center',
       render: (row) => (
-        <div className="flex items-center justify-center gap-1.5 bg-blue-50/50 border border-blue-100/50 px-2.5 py-1 rounded-xl text-blue-700">
-          <Award className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-          <span className="text-xs font-extrabold">{row.matchScore}%</span>
+        <div className="inline-flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-slate-700 dark:text-slate-300">
+          <Award className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+          <span className="text-xs font-black">{row.matchScore}%</span>
+          <span className="bg-amber-500 text-white text-[9px] font-black uppercase px-1 rounded">Soon</span>
         </div>
       )
     },
@@ -320,53 +358,25 @@ export function Applicants() {
     {
       header: 'Applied Date',
       key: 'applied_at',
-      render: (row) => (
-        <span className="text-xs font-medium text-slate-400">{formatDate(row.applied_at || row.created_at)}</span>
-      )
-    },
-    {
-      header: 'Resume',
-      key: 'resume',
-      render: (row) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => handleViewResume(row.resume)}
-          className="rounded-lg text-xs py-1.5 px-3 border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold"
-        >
-          <FileText className="w-3.5 h-3.5 text-slate-400" />
-          <span>View Resume</span>
-        </Button>
-      )
-    },
-    {
-      header: 'Actions',
       align: 'right',
-      render: (row) => {
-        const actions = getActions(row);
-        return (
-          <div className="flex items-center justify-end gap-1.5">
-            <button
-              onClick={() => navigate(`/recruiter/applications/${row.id}`)}
-              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
-              title="View Candidate Profile"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <ActionMenu actions={actions} />
-          </div>
-        );
-      }
+      render: (row) => (
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
+          {formatDate(row.applied_at || row.created_at)}
+        </span>
+      )
     }
   ];
 
   // Mobile card view custom renderer
   const renderMobileCard = (row, index) => {
     const candidate = row.candidate || {};
-    const actions = getActions(row);
 
     return (
-      <Card key={row.id} className="p-5 border border-slate-100 bg-white shadow-sm space-y-4 rounded-2xl">
+      <Card 
+        key={row.id} 
+        onClick={() => navigate(`/recruiter/applications/${row.id}`)}
+        className="p-5 border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#15161e] shadow-sm space-y-4 rounded-2xl cursor-pointer hover:border-blue-500/50 transition-all group"
+      >
         <div className="flex justify-between items-start gap-4">
           <div className="flex items-center gap-3">
             <Avatar
@@ -375,44 +385,30 @@ export function Applicants() {
               size="md"
             />
             <div>
-              <h4 className="font-bold text-slate-800 text-sm leading-snug">{candidate.name}</h4>
-              <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{candidate.email}</p>
+              <h4 className="font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 text-sm leading-snug transition-colors">{candidate.name}</h4>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold mt-0.5">{candidate.email}</p>
             </div>
           </div>
           <StageBadge stage={row.status} />
         </div>
 
-        <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500">
+        <div className="grid grid-cols-2 gap-y-2 gap-x-4 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs font-semibold text-slate-500">
           <div>
-            <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Applied Job</span>
-            <span className="text-slate-700 truncate block max-w-[130px]">{row.job?.title || 'Unknown Job'}</span>
+            <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase tracking-wider">Applied Job</span>
+            <span className="text-slate-800 dark:text-slate-200 truncate block max-w-[130px] font-bold">{row.job?.title || 'Unknown Job'}</span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Match Score</span>
-            <span className="text-blue-700 font-extrabold flex items-center gap-1">
-              <Award className="w-3.5 h-3.5 text-blue-500" />
+            <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase tracking-wider">Match Score (Soon)</span>
+            <span className="text-slate-700 dark:text-slate-300 font-extrabold flex items-center gap-1">
+              <Award className="w-3.5 h-3.5 text-amber-500" />
               <span>{row.matchScore}%</span>
+              <span className="bg-amber-500 text-white text-[9px] font-black uppercase px-1 rounded ml-0.5">Soon</span>
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Applied On</span>
-            <span className="text-slate-600">{formatDate(row.applied_at || row.created_at)}</span>
+            <span className="text-slate-400 dark:text-slate-500 block text-[9px] uppercase tracking-wider">Applied On</span>
+            <span className="text-slate-600 dark:text-slate-400">{formatDate(row.applied_at || row.created_at)}</span>
           </div>
-        </div>
-
-        {/* Mobile controls */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => handleViewResume(row.resume)}
-            className="rounded-lg text-xs py-1.5 px-3 border border-slate-200 hover:bg-slate-50 flex items-center gap-1.5 font-bold"
-          >
-            <FileText className="w-3.5 h-3.5 text-slate-400" />
-            <span>View Resume</span>
-          </Button>
-
-          <ActionMenu actions={actions} />
         </div>
       </Card>
     );
@@ -432,10 +428,10 @@ export function Applicants() {
       )}
 
       {/* Header section */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Review Applicants</h1>
-        <p className="text-slate-500 text-sm mt-1">Examine match scores, parse candidate qualifications, and schedule recruitment screenings.</p>
-      </div>
+      <PageHeader
+        title="Review Applicants"
+        subtitle="Examine match scores, parse candidate qualifications, and schedule recruitment screenings."
+      />
 
       {/* Error message */}
       {error && (
@@ -454,7 +450,7 @@ export function Applicants() {
       )}
 
       {/* Search, Filters, and Sorting card */}
-      <Card className="p-5 border border-slate-100 bg-white rounded-3xl shadow-sm space-y-5">
+      <Card className="p-5 border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           {/* Search Input (takes 2 cols on md+) */}
           <div className="md:col-span-2">
@@ -474,7 +470,7 @@ export function Applicants() {
           </div>
         </div>
 
-        <div className="border-t border-slate-100 pt-5">
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
           <ApplicantFilters
             jobsList={jobsList}
             selectedJob={jobIdParam}
@@ -489,8 +485,8 @@ export function Applicants() {
 
         {/* Filter Summary Chips */}
         {activeFilters.length > 0 && (
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-100 animate-fadeIn">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider pl-0.5 select-none">Active Filters:</span>
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800 animate-fadeIn">
+            <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-0.5 select-none">Active Filters:</span>
             {activeFilters.map((filter) => (
               <FilterChip
                 key={filter.key}
@@ -500,7 +496,7 @@ export function Applicants() {
             ))}
             <button
               onClick={handleClearAllFilters}
-              className="text-[10px] font-bold text-blue-600 hover:text-blue-700 hover:underline pl-1 focus:outline-none"
+              className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline pl-1 focus:outline-none"
             >
               Clear All
             </button>
@@ -549,6 +545,7 @@ export function Applicants() {
                 columns={columns}
                 data={appsData.items}
                 rowKey="id"
+                onRowClick={(row) => navigate(`/recruiter/applications/${row.id}`)}
                 renderMobileCard={renderMobileCard}
                 emptyState={
                   <EmptyState
@@ -570,6 +567,77 @@ export function Applicants() {
           )}
         </div>
       )}
+
+      {/* View Candidate Resume PDF Viewer Modal */}
+      <Modal 
+        isOpen={isResumeModalOpen} 
+        onClose={handleCloseResumeModal} 
+        title={selectedAppForResume?.candidate?.name ? `${selectedAppForResume.candidate.name}'s Resume` : 'Candidate Resume'}
+        headerActions={
+          <div className="flex items-center gap-2">
+            {pdfViewUrl && (
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={() => window.open(pdfViewUrl, '_blank')} 
+                className="rounded-xl text-xs font-bold flex items-center gap-1.5 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800"
+              >
+                <Eye className="w-3.5 h-3.5" /> Fullscreen PDF
+              </Button>
+            )}
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={() => {
+                if (selectedAppForResume?.id) {
+                  const name = selectedAppForResume.resume?.resume_file_name || selectedAppForResume.resume?.file_name || `${selectedAppForResume.candidate?.name || 'candidate'}_resume.pdf`;
+                  applicationService.downloadResume(selectedAppForResume.id, name);
+                }
+              }} 
+              className="rounded-xl text-xs font-bold flex items-center gap-1.5 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800"
+            >
+              <Download className="w-3.5 h-3.5" /> Download
+            </Button>
+          </div>
+        }
+        className="max-w-5xl"
+      >
+        <div className="w-full h-[75vh]">
+          {resumeLoading ? (
+            <div className="flex flex-col items-center justify-center h-full space-y-3">
+              <Spinner className="w-8 h-8 text-blue-600 animate-spin" />
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Loading candidate resume PDF...</p>
+            </div>
+          ) : pdfViewUrl ? (
+            <object
+              data={pdfViewUrl}
+              type="application/pdf"
+              className="w-full h-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 shadow-inner overflow-hidden"
+            >
+              <embed
+                src={pdfViewUrl}
+                type="application/pdf"
+                className="w-full h-full rounded-2xl"
+              />
+              <div className="flex flex-col items-center justify-center p-8 space-y-4 text-center">
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                  Your browser does not render inline PDF documents.
+                </p>
+                <Button variant="primary" onClick={() => window.open(pdfViewUrl, '_blank')}>
+                  Open PDF in New Window
+                </Button>
+              </div>
+            </object>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full space-y-2 text-center">
+              <FileText className="w-10 h-10 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
+                No resume file associated with this candidate profile or preview unavailable.
+              </p>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

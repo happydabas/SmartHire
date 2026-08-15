@@ -10,6 +10,7 @@ import AIInsightLoader from '@/components/ai/AIInsightLoader';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Card from '@/components/ui/Card';
+import PageHeader from '@/components/ui/PageHeader';
 import {
   BarChart3,
   BookOpen,
@@ -162,29 +163,24 @@ export function AIInsights() {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-fadeIn">
       {/* Heading */}
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <BarChart3 className="w-8 h-8 text-indigo-650 animate-pulse" />
-            <span>AI Career Insights</span>
-          </h1>
-          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">
-            Audit your resume strength, track market demand, and plan learning roadmaps.
-          </p>
-        </div>
-
-        {activeTab !== 'history' && (
-          <Button
-            variant="primary"
-            onClick={handleRefresh}
-            disabled={loading}
-            className="rounded-xl font-bold text-xs px-5 py-3 shadow-lg shrink-0 flex items-center gap-1.5"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh Insights</span>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="AI Career Insights"
+        subtitle="Audit your resume strength, track market demand, and plan learning roadmaps."
+        icon={BarChart3}
+        actions={
+          activeTab !== 'history' && (
+            <Button
+              variant="primary"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="rounded-xl font-black text-xs px-5 py-3 shadow-lg shadow-indigo-500/20 shrink-0 flex items-center gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Refresh Insights</span>
+            </Button>
+          )
+        }
+      />
 
       {/* 5 Tabs Navigation */}
       <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-805">

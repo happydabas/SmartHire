@@ -107,7 +107,8 @@ class JobRepository:
         experience_level: Optional[ExperienceLevel] = None,
         min_salary: Optional[Decimal] = None,
         max_salary: Optional[Decimal] = None,
-        skills: Optional[List[str]] = None
+        skills: Optional[List[str]] = None,
+        sort: Optional[str] = "latest"
     ) -> Tuple[int, List[Job]]:
         """
         Retrieve a paginated subset of active OPEN job postings along with the total records count.
@@ -164,7 +165,25 @@ class JobRepository:
         count_result = await db.execute(count_stmt)
         total_records = count_result.scalar_one()
         
-        # 4. Apply offset and limit to final query
+        # 4. Apply ordering based on sort parameter
+        if sort == "oldest":
+            stmt = stmt.order_by(Job.created_at.asc(), Job.id.asc())
+        elif sort == "salary_desc":
+            stmt = stmt.order_by(func.coalesce(Job.salary_max, Job.salary_min).desc().nullslast(), Job.id.desc())
+        elif sort == "salary_asc":
+            stmt = stmt.order_by(func.coalesce(Job.salary_min, Job.salary_max).asc().nullslast(), Job.id.asc())
+        elif sort == "company_asc":
+            stmt = stmt.outerjoin(Company, Job.company_id == Company.id).order_by(Company.name.asc(), Job.id.asc())
+        elif sort == "company_desc":
+            stmt = stmt.outerjoin(Company, Job.company_id == Company.id).order_by(Company.name.desc(), Job.id.desc())
+        elif sort == "title_asc":
+            stmt = stmt.order_by(Job.title.asc(), Job.id.asc())
+        elif sort == "title_desc":
+            stmt = stmt.order_by(Job.title.desc(), Job.id.desc())
+        else: # "latest"
+            stmt = stmt.order_by(Job.created_at.desc(), Job.id.desc())
+
+        # 5. Apply offset and limit to final query
         results_stmt = stmt.offset((page - 1) * limit).limit(limit)
         results_result = await db.execute(results_stmt)
         jobs = list(results_result.scalars().all())
@@ -333,20 +352,22 @@ class JobRepository:
         db: AsyncSession,
         *,
         db_obj: Job,
-        obj_in: JobUpdate
+        obj_in: JobUpdate,
+        auto_commit: bool = True
     ) -> Job:
         """
         Update the attributes of an existing Job posting.
         """
-        update_data = obj_in.model_dump(exclude={"required_skills", "hiring_pipeline"})
+        update_data = obj_in.model_dump(exclude={"required_skills", "hiring_pipeline", "recruiter_ids"}, exclude_unset=True)
         
         for field in update_data:
             if hasattr(db_obj, field):
                 setattr(db_obj, field, update_data[field])
                 
         db.add(db_obj)
-        await db.commit()
-        await db.refresh(db_obj)
+        if auto_commit:
+            await db.commit()
+            await db.refresh(db_obj)
         return db_obj
 
     async def soft_delete(

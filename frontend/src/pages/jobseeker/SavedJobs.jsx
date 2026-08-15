@@ -22,6 +22,7 @@ import { formatSalary } from '@/utils/formatSalary';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
+import PageHeader from '@/components/ui/PageHeader';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
@@ -188,10 +189,10 @@ export function SavedJobsPage() {
     <div className="max-w-6xl mx-auto space-y-8 pb-12">
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Saved Jobs</h1>
-          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Manage and track your bookmarked career opportunities.</p>
-        </div>
+        <PageHeader
+          title="Saved Jobs"
+          subtitle="Manage and track your bookmarked career opportunities."
+        />
 
         {error && (
           <div className="flex items-center gap-3 p-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">
@@ -446,7 +447,7 @@ export function SavedJobsPage() {
                     size="sm"
                     onClick={() => handleViewJobDetails(job.id)}
                     disabled={actionLoading || isClosed}
-                    className={`rounded-xl font-semibold py-2 shadow-sm ${isClosed ? 'opacity-50 cursor-not-allowed bg-slate-300 hover:bg-slate-300' : 'bg-blue-650 hover:bg-blue-700 text-white'}`}
+                    className={`rounded-xl font-bold py-2 shadow-md text-white cursor-pointer ${isClosed ? 'opacity-50 cursor-not-allowed bg-slate-400' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >
                     Apply
                   </Button>

@@ -23,13 +23,13 @@ export const FilterDropdown = ({
         placeholder={placeholder}
         label={
           label ? (
-            <span className="flex items-center gap-1.5 text-slate-500 font-bold select-none">
-              <Filter className="w-3 h-3 text-slate-400" />
+            <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-bold select-none">
+              <Filter className="w-3 h-3 text-slate-400 dark:text-slate-500" />
               <span>{label}</span>
             </span>
           ) : null
         }
-        className="py-2 text-xs font-semibold text-slate-600 rounded-xl"
+        className="py-2 text-xs font-semibold text-slate-600 dark:text-slate-200 rounded-xl"
         {...props}
       />
     </div>

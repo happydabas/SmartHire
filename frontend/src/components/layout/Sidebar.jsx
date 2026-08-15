@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useNotifications } from '@/hooks/useNotifications';
 import { ROLES } from '@/constants/roles';
+import { toast } from 'sonner';
 import {
   LayoutDashboard,
   User,
@@ -17,13 +19,15 @@ import {
   TrendingUp,
   Sun,
   Moon,
-  ChevronDown
+  ChevronDown,
+  Bell
 } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
 
 export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = false }) {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
@@ -109,10 +113,42 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
                 {!collapsedMode && <span>Applications</span>}
               </NavLink>
 
-              <NavLink to="/profile/insights" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "AI Career Insights" : undefined}>
-                <TrendingUp className="w-4.5 h-4.5 shrink-0 text-indigo-500" />
-                {!collapsedMode && <span>AI Career Insights</span>}
+              <NavLink to="/notifications" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Notifications" : undefined}>
+                <div className="relative flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3.5">
+                    <Bell className="w-4.5 h-4.5 shrink-0" />
+                    {!collapsedMode && <span>Notifications</span>}
+                  </div>
+                  {!collapsedMode && unreadCount > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] font-extrabold bg-blue-600 text-white rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
               </NavLink>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  toast.info('AI Career Insights feature is coming soon!');
+                  handleLinkClick();
+                }}
+                className={twMerge(linkClass, "w-full text-left cursor-pointer")}
+                title={collapsedMode ? "AI Career Insights (Soon)" : undefined}
+              >
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="w-4.5 h-4.5 shrink-0 text-indigo-500" />
+                    {!collapsedMode && <span>AI Career Insights</span>}
+                  </div>
+                  {!collapsedMode && (
+                    <span className="bg-amber-500 text-white text-[9px] font-black uppercase px-1.5 py-0.5 rounded shrink-0">
+                      Soon
+                    </span>
+                  )}
+                </div>
+              </button>
             </>
           )}
 
@@ -132,6 +168,20 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
               <NavLink to="/recruiter/applicants" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Applicants" : undefined}>
                 <User className="w-4.5 h-4.5 shrink-0" />
                 {!collapsedMode && <span>Applicants</span>}
+              </NavLink>
+
+              <NavLink to="/notifications" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Notifications" : undefined}>
+                <div className="relative flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3.5">
+                    <Bell className="w-4.5 h-4.5 shrink-0" />
+                    {!collapsedMode && <span>Notifications</span>}
+                  </div>
+                  {!collapsedMode && unreadCount > 0 && (
+                    <span className="px-2 py-0.5 text-[10px] font-extrabold bg-blue-600 text-white rounded-full">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
               </NavLink>
 
               <NavLink to="/recruiter/insights" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Hiring Insights" : undefined}>
@@ -187,22 +237,9 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
                 else navigate('/recruiter/profile');
                 handleLinkClick();
               }}
-              className="w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800/40 flex items-center gap-2.5 transition-colors"
+              className="w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold text-slate-700 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800/40 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
-              <User className="w-4 h-4 text-slate-450 dark:text-white" />
-              <span>My Profile</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setIsProfileMenuOpen(false);
-                if (user.role === ROLES.JOB_SEEKER) navigate('/profile');
-                else navigate('/recruiter/profile');
-                handleLinkClick();
-              }}
-              className="w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium text-slate-700 hover:bg-slate-50 dark:text-white dark:hover:bg-slate-800/40 flex items-center gap-2.5 transition-colors"
-            >
-              <Settings className="w-4 h-4 text-slate-450 dark:text-white" />
+              <Settings className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               <span>Settings</span>
             </button>
 
@@ -213,7 +250,7 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
                 setIsProfileMenuOpen(false);
                 handleLogout();
               }}
-              className="w-full px-4 py-2.5 rounded-xl text-left text-xs font-medium text-rose-600 hover:bg-rose-50 dark:text-rose-455 dark:hover:bg-rose-955/20 flex items-center gap-2.5 transition-colors"
+              className="w-full px-4 py-2.5 rounded-xl text-left text-xs font-bold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/20 flex items-center gap-2.5 transition-colors cursor-pointer"
             >
               <LogOut className="w-4 h-4" />
               <span>Logout</span>

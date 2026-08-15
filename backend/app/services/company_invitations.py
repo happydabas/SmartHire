@@ -118,6 +118,20 @@ class CompanyInvitationService:
                 detail=f"Failed to send recruiter invitation email via SMTP: {str(exc)}"
             )
 
+        try:
+            from app.services.notification_service import notify_invitation
+            invited_uid = existing_user.id if existing_user else None
+            await notify_invitation(
+                self.db,
+                owner_id=owner_id,
+                invited_email=recruiter_email,
+                company_name=company.name,
+                invited_user_id=invited_uid
+            )
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch invitation notification: %s", notif_err)
+
         return invitation
 
     async def list_company_invitations(self, company_id: int, owner_id: int) -> List[CompanyInvitation]:
@@ -315,6 +329,20 @@ class CompanyInvitationService:
 
         user_to_login.is_owner = invitation.company.owner_id == user_to_login.id if (invitation and invitation.company) else False
         clear_user_cache(user_to_login.id)
+
+        try:
+            from app.services.notification_service import notify_recruiter_joined
+            if invitation.company and invitation.company.owner_id:
+                rec_name = user_to_login.name or email
+                await notify_recruiter_joined(
+                    self.db,
+                    owner_id=invitation.company.owner_id,
+                    recruiter_name=rec_name,
+                    company_name=invitation.company.name
+                )
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch recruiter joined notification: %s", notif_err)
 
         # Generate JWT session tokens
         access_token = create_access_token(

@@ -88,7 +88,7 @@ function AppRoutes() {
           />
         </Route>
 
-        {/* 3. Protected Dashboard Pages mapped inside DashboardLayout */}
+        {/* 3. Protected Dashboard Pages mapped inside DashboardLayout (Job Seeker Panel) */}
         <Route 
           element={
             <ProtectedRoute>
@@ -148,9 +148,9 @@ function AppRoutes() {
             <Route path={ROUTES.RECRUITER_APPLICANT_DETAILS} element={<ApplicantDetails />} />
             <Route path={ROUTES.RECRUITER_PROFILE} element={<RecruiterProfile />} />
             <Route path={ROUTES.RECRUITER_INSIGHTS} element={<HiringInsights />} />
+            <Route path={ROUTES.RECRUITER_NOTIFICATIONS} element={<Notifications />} />
             <Route path="/recruiter/team" element={<RecruiterManagement />} />
             <Route path={ROUTES.RECRUITER_COMPANY_SETTINGS} element={<RecruiterCompanySettings />} />
-            <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
           </Route>
         </Route>
 

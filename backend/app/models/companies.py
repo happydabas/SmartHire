@@ -75,9 +75,9 @@ class Company(Base, TimestampMixin):
 
     # Logo image URL - Nullable
     logo_url: Mapped[Optional[str]] = mapped_column(
-        sa.String(255),
+        sa.Text,
         nullable=True,
-        comment="URL pointing to the stored logo image file"
+        comment="URL pointing to the stored logo image file or Base64 string"
     )
 
     # Corporate website URL - Nullable

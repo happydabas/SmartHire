@@ -11,6 +11,7 @@ import Toast from '@/components/ui/Toast';
 import Spinner from '@/components/ui/Spinner';
 import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/common/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
 import { formatDate } from '@/utils/formatDate';
 
 export function RecruiterManagement() {
@@ -161,16 +162,16 @@ export function RecruiterManagement() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Recruiter Management</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Manage team members, invite new recruiters, and monitor invitation status.</p>
-        </div>
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
-          <Building2 className="w-4 h-4" />
-          <span>{recruiters.length} Active Recruiters</span>
-        </div>
-      </div>
+      <PageHeader
+        title="Recruiter Management"
+        subtitle="Manage team members, invite new recruiters, and monitor invitation status."
+        actions={
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-100 dark:border-blue-500/20">
+            <Building2 className="w-4 h-4" />
+            <span>{recruiters.length} Active Recruiters</span>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         

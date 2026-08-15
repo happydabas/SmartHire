@@ -3,27 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import {
   Briefcase,
   Layers,
-  ChevronRight,
   PlusCircle,
   FileClock,
   Sparkles,
   ClipboardList,
-  ArrowLeft,
   GraduationCap,
   Building,
-  DollarSign,
-  MapPin,
   ListTodo,
-  ShieldCheck,
   ShieldAlert,
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Sliders
 } from 'lucide-react';
 import { UserCheck, CheckSquare, Square } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { jobService } from '@/services/jobs/jobService';
 import { companyService } from '@/services/company/companyService';
-import { skillsService } from '@/services/skills/skillsService';
 import { notificationService } from '@/services/notificationService';
 import { MASTER_SKILLS_CATALOG } from '@/pages/jobseeker/Skills';
 
@@ -36,31 +31,13 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
+import SegmentedDateInput from '@/components/ui/SegmentedDateInput';
+import PipelineCustomizerModal from '@/components/ui/PipelineCustomizerModal';
+import JobPreviewCard from '@/components/ui/JobPreviewCard';
+import PageHeader from '@/components/ui/PageHeader';
 import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
-// Predefined hiring pipeline templates
-const PIPELINE_TEMPLATES = [
-  {
-    id: 'standard_tech',
-    name: 'Standard Technical Pipeline',
-    stages: ['Applied', 'Technical Screening', 'Coding Challenge', 'Technical Interview', 'HR Interview', 'Offer']
-  },
-  {
-    id: 'standard_commercial',
-    name: 'Standard Sales / Commercial Pipeline',
-    stages: ['Applied', 'Screening Call', 'Case Presentation', 'Final Interview', 'Offer']
-  },
-  {
-    id: 'fast_track',
-    name: 'Simple Fast-track Pipeline',
-    stages: ['Applied', 'Final Interview', 'Offer']
-  },
-  {
-    id: 'default',
-    name: 'Default Pipeline',
-    stages: ['Applied', 'Screening', 'Technical Interview', 'Hr Interview', 'Offer']
-  }
-];
+const DEFAULT_PIPELINE = ['Applied', 'Screening', 'Technical Interview', 'HR Interview', 'Offer'];
 
 export function CreateJob() {
   const navigate = useNavigate();
@@ -77,6 +54,10 @@ export function CreateJob() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
 
+  // Hiring pipeline state
+  const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE);
+  const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
+
   // Form Field values
   const [formFields, setFormFields] = useState({
     title: '',
@@ -92,8 +73,7 @@ export function CreateJob() {
     responsibilities: '',
     requirements: '',
     benefits: '',
-    required_skills: [], // stores skill IDs
-    pipeline_template_id: 'default'
+    required_skills: []
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -173,7 +153,6 @@ export function CreateJob() {
         const data = await companyService.getRecruiters(user.company_id);
         const recruitersList = Array.isArray(data) ? data : (data.recruiters || []);
         setCompanyRecruiters(recruitersList);
-        // Default to selecting all recruiters
         setSelectedRecruiterIds(recruitersList.map(r => r.id));
       } catch (err) {
         console.error('Failed to load company recruiters:', err);
@@ -211,25 +190,24 @@ export function CreateJob() {
       setSubmitting(true);
       setGlobalError(null);
 
-      // Map selected skill IDs back to skill_name strings as required by JobCreate schema
+      // Map selected skill IDs back to skill_name strings
       const mappedSkills = formFields.required_skills.map(skillId => {
         const found = availableSkills.find(s => s.id === skillId || s.id === Number(skillId) || s.skill_name === skillId || s.label === skillId);
         if (found) return found.skill_name || found.label || String(skillId);
         return String(skillId);
       }).filter(Boolean);
 
-      // Find the selected pipeline stages
-      const selectedPipelineObj = PIPELINE_TEMPLATES.find(p => p.id === formFields.pipeline_template_id);
-      const pipelineStages = selectedPipelineObj ? selectedPipelineObj.stages : PIPELINE_TEMPLATES[3].stages;
-
       // Clean salary fields
       const salaryMinVal = formFields.salary_min && !isNaN(parseFloat(formFields.salary_min)) ? parseFloat(formFields.salary_min) : null;
       const salaryMaxVal = formFields.salary_max && !isNaN(parseFloat(formFields.salary_max)) ? parseFloat(formFields.salary_max) : null;
 
-      // Format application deadline safely
+      // Format application deadline safely (set to 23:59:59Z if YYYY-MM-DD string)
       let formattedDeadline = null;
       if (formFields.application_deadline) {
-        const d = new Date(formFields.application_deadline);
+        const dateStr = formFields.application_deadline.includes('T')
+          ? formFields.application_deadline
+          : `${formFields.application_deadline}T23:59:59Z`;
+        const d = new Date(dateStr);
         if (!isNaN(d.getTime())) {
           formattedDeadline = d.toISOString();
         }
@@ -274,7 +252,6 @@ export function CreateJob() {
       );
       setSuccessMode(true);
 
-      // Trigger Job Published notification
       if (submitStatus === 'open' && createdJob) {
         notificationService.notifyJobPublished(createdJob.id, createdJob.title || formFields.title, user)
           .catch(err => console.error('Notification publishing trigger error:', err));
@@ -312,17 +289,17 @@ export function CreateJob() {
       responsibilities: '',
       requirements: '',
       benefits: '',
-      required_skills: [],
-      pipeline_template_id: 'default'
+      required_skills: []
     });
+    setPipelineStages(DEFAULT_PIPELINE);
     setFieldErrors({});
     setGlobalError(null);
     setSuccessMode(false);
   };
 
-  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+  const isAuthorized = Boolean(user?.is_owner || user?.role === 'company_owner' || (user?.role === 'recruiter' && user?.company_id));
 
-  if (!isOwner) {
+  if (!isAuthorized) {
     return (
       <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
         <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center">
@@ -330,7 +307,7 @@ export function CreateJob() {
         </div>
         <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
         <p className="text-sm text-slate-500 leading-relaxed">
-          Only the Company Owner is authorized to create job postings.
+          You must be a Recruiter or Company Owner linked to a registered company to create job postings.
         </p>
       </div>
     );
@@ -381,10 +358,8 @@ export function CreateJob() {
     );
   }
 
-  const selectedPipeline = PIPELINE_TEMPLATES.find(p => p.id === formFields.pipeline_template_id) || PIPELINE_TEMPLATES[3];
-
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Toast popup */}
       {toastMessage && (
         <Toast
@@ -394,21 +369,18 @@ export function CreateJob() {
         />
       )}
 
-      {/* Header controls */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/recruiter')}
-          className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
-          title="Back to Dashboard"
-          disabled={submitting}
-        >
-          <ArrowLeft className="w-4.5 h-4.5" />
-        </button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Create Job Posting</h1>
-          <p className="text-slate-500 text-sm mt-1">Configure recruitment parameters and publish candidate search listings.</p>
-        </div>
-      </div>
+      {/* Custom Pipeline Modal */}
+      <PipelineCustomizerModal
+        isOpen={isPipelineModalOpen}
+        onClose={() => setIsPipelineModalOpen(false)}
+        initialStages={pipelineStages}
+        onSaveStages={(newStages) => setPipelineStages(newStages)}
+      />
+
+      <PageHeader
+        title="Create Job Posting"
+        subtitle="Configure recruitment parameters, required skills, and publish candidate search listings."
+      />
 
       {globalError && (
         <div className="flex items-center gap-3 p-4 text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl animate-fadeIn">
@@ -417,16 +389,19 @@ export function CreateJob() {
         </div>
       )}
 
-      {/* Multi-Section form panel */}
-      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* 2-COLUMN GRID FORM PANEL */}
+      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
-        {/* LEFT COLUMN - Configuration parameters */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* LEFT COLUMN: Input Form Sections (A, B, C, D, E) */}
+        <div className="lg:col-span-2 space-y-8">
+
           {/* Card A: Basic Information */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Building className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">A. Basic Information</h2>
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-6 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                <Building className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">A. Basic Information</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -490,10 +465,10 @@ export function CreateJob() {
                 disabled={submitting}
               />
 
-              <Input
+              {/* Segmented Auto-Advancing Application Deadline */}
+              <SegmentedDateInput
                 label="Application Deadline"
                 id="application_deadline"
-                type="date"
                 value={formFields.application_deadline}
                 onChange={handleInputChange}
                 disabled={submitting}
@@ -525,10 +500,12 @@ export function CreateJob() {
           </Card>
 
           {/* Card B: Job Details */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <ClipboardList className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">B. Job Details</h2>
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-6 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">B. Job Details</h2>
             </div>
 
             <div className="space-y-5">
@@ -575,26 +552,35 @@ export function CreateJob() {
               />
             </div>
           </Card>
-        </div>
 
-        {/* RIGHT COLUMN - Skills, Pipeline & Submission Actions */}
-        <div className="space-y-6">
-          {/* Card C: Required Skills */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">C. Required Skills</h2>
+          {/* Card C: REQUIRED SKILLS SECTION */}
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  C. Required Skills & Competencies *
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1 rounded-full">
+                  {formFields.required_skills.length} Skills Selected
+                </span>
+              </div>
             </div>
 
             <MultiSelect
-              label="Select Master Skills *"
               id="required_skills"
               options={availableSkills}
               selectedValues={formFields.required_skills}
               onChange={handleMultiSelectChange}
               error={fieldErrors.required_skills}
-              placeholder="Search & add skills..."
+              placeholder="Search skills (e.g. React, Python, Docker)..."
               disabled={submitting || skillsLoading}
+              inline={true}
+              showCategoryFilters={false}
             />
             {skillsLoading && (
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
@@ -605,47 +591,52 @@ export function CreateJob() {
           </Card>
 
           {/* Card D: Hiring Pipeline */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Layers className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">D. Hiring Pipeline</h2>
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">D. Hiring Pipeline</h2>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsPipelineModalOpen(true)}
+                className="rounded-xl font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-400 transition-all"
+              >
+                <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>Customize Hiring Pipeline</span>
+              </Button>
             </div>
 
-            <Select
-              label="Choose Recruitment Flow"
-              id="pipeline_template_id"
-              value={formFields.pipeline_template_id}
-              onChange={handleInputChange}
-              options={PIPELINE_TEMPLATES.map(p => ({ label: p.name, value: p.id }))}
-              disabled={submitting}
-            />
-
-            {/* Pipeline Stage Preview Graphic */}
-            <div className="space-y-2 pt-2">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hiring Stages Sequence</label>
-              <div className="flex flex-col gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-3.5 max-h-48 overflow-y-auto">
-                {selectedPipeline.stages.map((stage, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-xs font-semibold text-slate-700">
-                    <span className="w-5 h-5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-extrabold">{idx + 1}</span>
-                    <span>{stage}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
+              {pipelineStages.map((stage, idx) => (
+                <div key={idx} className="flex items-center gap-3 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs">
+                  <span className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-black shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="truncate">{stage}</span>
+                </div>
+              ))}
             </div>
           </Card>
 
           {/* Card E: Assign Recruiters */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-5 h-5 text-blue-600" />
-                <h2 className="text-base font-extrabold text-slate-800 tracking-tight">E. Assign Recruiters</h2>
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-5 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">E. Assign Recruiters</h2>
               </div>
               {companyRecruiters.length > 0 && (
                 <button
                   type="button"
                   onClick={handleSelectAllRecruiters}
-                  className="text-xs font-bold text-blue-600 hover:text-blue-700 transition-colors"
+                  className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                 >
                   {selectedRecruiterIds.length === companyRecruiters.length ? 'Deselect All' : 'Select All'}
                 </button>
@@ -660,35 +651,35 @@ export function CreateJob() {
             ) : companyRecruiters.length === 0 ? (
               <p className="text-xs text-slate-400 font-medium">No recruiters found in company.</p>
             ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto pr-1">
                 {companyRecruiters.map(recruiter => {
                   const isSelected = selectedRecruiterIds.includes(recruiter.id);
                   return (
                     <div
                       key={recruiter.id}
                       onClick={() => toggleRecruiter(recruiter.id)}
-                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer select-none ${
+                      className={`flex items-center justify-between p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
                         isSelected
-                          ? 'bg-blue-50/60 border-blue-200 text-blue-900'
-                          : 'bg-slate-50/40 border-slate-150 text-slate-700 hover:bg-slate-50'
+                          ? 'bg-blue-50/60 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 shadow-2xs'
+                          : 'bg-slate-50/40 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-900/70'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs ${
-                          isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
+                          isSelected ? 'bg-blue-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                         }`}>
                           {recruiter.name?.charAt(0) || 'R'}
                         </div>
-                        <div>
-                          <p className="text-xs font-bold">{recruiter.name}</p>
-                          <p className="text-[11px] text-slate-400 font-medium">{recruiter.email}</p>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold truncate text-slate-800 dark:text-slate-200">{recruiter.name}</p>
+                          <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">{recruiter.email}</p>
                         </div>
                       </div>
                       <div>
                         {isSelected ? (
-                          <CheckSquare className="w-5 h-5 text-blue-600 shrink-0" />
+                          <CheckSquare className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
                         ) : (
-                          <Square className="w-5 h-5 text-slate-300 shrink-0" />
+                          <Square className="w-5 h-5 text-slate-300 dark:text-slate-600 shrink-0" />
                         )}
                       </div>
                     </div>
@@ -697,26 +688,35 @@ export function CreateJob() {
               </div>
             )}
           </Card>
+        </div>
 
-          {/* Card F: Status Submission Actions */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm relative overflow-hidden">
-            <div className="absolute right-0 bottom-0 opacity-5">
-              <ShieldCheck className="w-32 h-32 text-slate-800" />
-            </div>
-            
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <ListTodo className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">F. Publish Status</h2>
+        {/* RIGHT COLUMN: COMPLETELY FIXED IN VIEWPORT WITHOUT SCROLLING */}
+        <div className="lg:col-span-1 sticky top-28 self-start space-y-4">
+          
+          {/* Real-time Live Job Preview Card */}
+          <JobPreviewCard
+            formFields={formFields}
+            pipelineStages={pipelineStages}
+            availableSkills={availableSkills}
+            companyRecruiters={companyRecruiters}
+            selectedRecruiterIds={selectedRecruiterIds}
+          />
+
+          {/* Publish & Draft Actions Section Card */}
+          <Card className="p-5 border border-slate-200/80 bg-white dark:bg-[#15161e] rounded-3xl space-y-3 shadow-lg">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              <ListTodo className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Publish & Save</h3>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2.5">
               <Button
                 variant="primary"
                 size="md"
                 onClick={() => handleSubmit('open')}
                 isLoading={submitting}
                 disabled={submitting}
-                className="w-full rounded-xl py-3 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
+                className="w-full rounded-2xl py-3 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
               >
                 <PlusCircle className="w-4.5 h-4.5" />
                 <span>Publish Job Posting</span>
@@ -728,7 +728,7 @@ export function CreateJob() {
                 onClick={() => handleSubmit('draft')}
                 isLoading={submitting}
                 disabled={submitting}
-                className="w-full rounded-xl py-3 font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50"
+                className="w-full rounded-2xl py-3 font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
               >
                 <FileClock className="w-4.5 h-4.5" />
                 <span>Save as Draft</span>

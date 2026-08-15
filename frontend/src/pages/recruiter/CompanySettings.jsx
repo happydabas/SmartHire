@@ -13,6 +13,7 @@ import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import ImageUploader from '@/components/ui/ImageUploader';
 import SkeletonProfile from '@/components/common/SkeletonProfile';
+import PageHeader from '@/components/ui/PageHeader';
 import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
 // Simple URL validation regex
@@ -78,12 +79,12 @@ export function CompanySettings() {
       const data = await companyService.getCompany(companyId);
       
       setCompanyName(data.name || '');
-      setLogo(data.logo || '');
+      setLogo(data.logo_url || data.logo || '');
       setDescription(data.description || '');
       setWebsite(data.website || '');
       setIndustry(data.industry || 'Technology');
       setCompanySize(data.company_size || '11-50');
-      setHeadquarters(data.headquarters || '');
+      setHeadquarters(data.location || data.headquarters || '');
     } catch (err) {
       console.error(err);
       triggerToast('Failed to load company details.', 'error');
@@ -102,7 +103,6 @@ export function CompanySettings() {
       setUploadLoading(true);
       setErrors(prev => ({ ...prev, logo: '' }));
       
-      // Upload logo (converts to base64 Data URL)
       const base64Url = await companyService.uploadLogo(file);
       setLogo(base64Url);
       
@@ -130,9 +130,7 @@ export function CompanySettings() {
       newErrors.description = 'Description should be at least 20 characters long';
     }
 
-    if (!website.trim()) {
-      newErrors.website = 'Website URL is required';
-    } else if (!URL_REGEX.test(website.trim())) {
+    if (website.trim() && !URL_REGEX.test(website.trim())) {
       newErrors.website = 'Website URL format is invalid. Please enter a valid URL (e.g. www.mycompany.com)';
     }
 
@@ -153,13 +151,21 @@ export function CompanySettings() {
 
     try {
       setSaveLoading(true);
+      let formattedWebsite = website.trim();
+      if (formattedWebsite && !formattedWebsite.startsWith('http://') && !formattedWebsite.startsWith('https://')) {
+        formattedWebsite = `https://${formattedWebsite}`;
+      }
+
       await companyService.updateCompany(companyId, {
+        name: companyName.trim() || undefined,
         description: description.trim(),
-        website: website.trim(),
+        website: formattedWebsite || null,
         industry,
         company_size: companySize,
+        location: headquarters.trim(),
         headquarters: headquarters.trim(),
-        logo
+        logo_url: logo || null,
+        logo: logo || null
       });
 
       triggerToast('Company settings updated successfully!', 'success');
@@ -167,8 +173,15 @@ export function CompanySettings() {
       console.error(err);
       const errorsMap = parseFormErrors(err);
       if (errorsMap) {
+        if (errorsMap.location && !errorsMap.headquarters) {
+          errorsMap.headquarters = errorsMap.location;
+        }
+        if (errorsMap.logo_url && !errorsMap.logo) {
+          errorsMap.logo = errorsMap.logo_url;
+        }
         setErrors(errorsMap);
-        triggerToast('Please correct validation errors on the form.', 'error');
+        const detailedMsg = Object.entries(errorsMap).map(([field, msg]) => `${field}: ${msg}`).join(', ');
+        triggerToast(detailedMsg || 'Please correct validation errors on the form.', 'error');
       } else {
         triggerToast(extractErrorMessage(err) || 'Failed to save company settings.', 'error');
       }
@@ -186,34 +199,33 @@ export function CompanySettings() {
   if (!isOwner) {
     return (
       <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
-        <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+        <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center">
           <ShieldAlert className="w-6 h-6" />
         </div>
         <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
-        <p className="text-sm text-slate-500 leading-relaxed">
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
           Only the Company Owner is authorized to view or modify company settings.
         </p>
       </div>
     );
   }
 
-  // Handle case where recruiter is not linked to any company
   if (!companyId) {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white border border-slate-100 rounded-3xl p-6 shadow-lg shadow-slate-100/50 animate-in fade-in duration-200">
-        <div className="mx-auto w-12 h-12 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
+        <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center">
           <ShieldAlert className="w-6 h-6" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800 tracking-tight">Access Restricted</h3>
-        <p className="text-sm text-slate-500 leading-relaxed">
-          Your recruiter account is not yet associated with any registered company profile. Please check your company invitation settings or contact your administrator.
+        <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
+        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+          Your recruiter account is not yet associated with any registered company profile.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12 relative animate-in fade-in duration-200">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 relative animate-in fade-in duration-200">
       {/* Toast notifications */}
       {toastMessage && (
         <Toast
@@ -223,17 +235,17 @@ export function CompanySettings() {
         />
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Company Settings</h1>
-        <p className="text-slate-500 text-sm mt-1">Configure company details, logo, size, and headquarters parameters.</p>
-      </div>
+      {/* 100% Completely Fixed Title Header */}
+      <PageHeader
+        title="Company Settings"
+        subtitle="Configure company details, logo, size, and headquarters parameters."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* Left Side: Logo Uploader Card */}
-        <div className="md:col-span-1">
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl shadow-sm">
+        <div className="lg:col-span-1">
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm">
             <ImageUploader
               src={logo}
               label="Company Logo"
@@ -246,28 +258,28 @@ export function CompanySettings() {
         </div>
 
         {/* Right Side: Settings Details Form Card */}
-        <div className="md:col-span-2">
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Building2 className="w-5 h-5 text-blue-600 shrink-0" />
-              <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">Company Information</h3>
+        <div className="lg:col-span-2">
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm space-y-6">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <h3 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight">Company Profile Information</h3>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-5">
               
               {/* Read-Only Company Name input */}
               <div className="space-y-1.5">
                 <Input
                   id="company-name-input"
                   label={
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5">
                       <span>Company Name</span>
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded uppercase select-none">Read-Only</span>
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded uppercase select-none">Read-Only</span>
                     </span>
                   }
                   value={companyName}
                   disabled={true}
-                  className="rounded-xl border-slate-200 bg-slate-50/70 font-semibold text-slate-400 cursor-not-allowed text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 font-semibold text-slate-400 dark:text-slate-500 cursor-not-allowed text-xs"
                 />
               </div>
 
@@ -281,12 +293,12 @@ export function CompanySettings() {
                   onChange={(e) => setWebsite(e.target.value)}
                   error={errors.website}
                   disabled={saveLoading}
-                  className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs"
                 />
               </div>
 
               {/* Industry & Size selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-1.5">
                   <Select
                     id="company-industry-select"
@@ -295,7 +307,7 @@ export function CompanySettings() {
                     onChange={(e) => setIndustry(e.target.value)}
                     options={INDUSTRY_OPTIONS}
                     disabled={saveLoading}
-                    className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs bg-white"
+                    className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs bg-white dark:bg-[#15161e]"
                   />
                 </div>
 
@@ -307,7 +319,7 @@ export function CompanySettings() {
                     onChange={(e) => setCompanySize(e.target.value)}
                     options={SIZE_OPTIONS}
                     disabled={saveLoading}
-                    className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs bg-white"
+                    className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs bg-white dark:bg-[#15161e]"
                   />
                 </div>
               </div>
@@ -322,7 +334,7 @@ export function CompanySettings() {
                   onChange={(e) => setHeadquarters(e.target.value)}
                   error={errors.headquarters}
                   disabled={saveLoading}
-                  className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs"
                 />
               </div>
 
@@ -337,19 +349,19 @@ export function CompanySettings() {
                   error={errors.description}
                   disabled={saveLoading}
                   rows={4}
-                  className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs"
                 />
               </div>
 
               {/* Save Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end w-full sm:w-auto">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end w-full">
                 <Button
                   type="submit"
                   variant="primary"
                   size="md"
                   disabled={saveLoading || uploadLoading}
                   isLoading={saveLoading}
-                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
+                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-3 px-6 shadow-md shadow-blue-500/10 text-xs"
                 >
                   <FileCheck className="w-4 h-4" />
                   <span>Save Settings</span>

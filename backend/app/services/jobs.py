@@ -3,6 +3,7 @@ from decimal import Decimal
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+import sqlalchemy as sa
 
 from app.repositories.jobs import JobRepository
 from app.repositories.skills import SkillRepository
@@ -185,7 +186,27 @@ class JobService:
                 detail="You do not have permission to modify jobs from another company."
             )
 
+        old_ids = set()
+        if hasattr(job, 'recruiters') and job.recruiters:
+            old_ids = {r.id for r in job.recruiters if r.id}
+
         updated_ids = await self.job_repo.update_job_recruiters(self.db, job_id=job.id, recruiter_ids=recruiter_ids)
+        new_ids = set(updated_ids)
+
+        try:
+            from app.services.notification_service import notify_job_assignment
+            added_ids = new_ids - old_ids
+            removed_ids = old_ids - new_ids
+            for r_id in added_ids:
+                if r_id != current_user.id:
+                    await notify_job_assignment(self.db, recruiter_id=r_id, job_title=job.title, is_assigned=True)
+            for r_id in removed_ids:
+                if r_id != current_user.id:
+                    await notify_job_assignment(self.db, recruiter_id=r_id, job_title=job.title, is_assigned=False)
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch job assignment notification: %s", notif_err)
+
         ttl_cache.invalidate_prefix("jobs:")
         return updated_ids
 
@@ -209,7 +230,11 @@ class JobService:
                 detail="You are not authorized to edit this job posting."
             )
             
-        job.required_skills.clear()
+        # Delete existing JobRequiredSkill records explicitly to prevent UNIQUE constraint collisions
+        await self.db.execute(
+            sa.delete(JobRequiredSkill).where(JobRequiredSkill.job_id == job.id)
+        )
+        await self.db.flush()
         
         for skill_name in obj_in.required_skills:
             clean_name = skill_name.strip()
@@ -236,7 +261,11 @@ class JobService:
             await self.db.flush()
             job.pipeline = pipeline
         else:
-            job.pipeline.stages.clear()
+            # Delete existing stages explicitly to prevent constraint collisions
+            await self.db.execute(
+                sa.delete(PipelineStage).where(PipelineStage.pipeline_id == job.pipeline.id)
+            )
+            await self.db.flush()
             
         for idx, stage_name in enumerate(obj_in.hiring_pipeline):
             clean_stage = stage_name.strip()
@@ -249,11 +278,15 @@ class JobService:
                 stage_order=idx + 1
             )
             self.db.add(stage)
+
+        if getattr(obj_in, "recruiter_ids", None) is not None and (current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER):
+            await self.update_job_assignments(job.id, obj_in.recruiter_ids, current_user)
             
         await self.job_repo.update(
             self.db,
             db_obj=job,
-            obj_in=obj_in
+            obj_in=obj_in,
+            auto_commit=False
         )
         
         await self.db.commit()
@@ -448,7 +481,8 @@ class JobService:
         experience_level: Optional[str] = None,
         min_salary: Optional[Decimal] = None,
         max_salary: Optional[Decimal] = None,
-        skills: Optional[str] = None
+        skills: Optional[str] = None,
+        sort: Optional[str] = "latest"
     ) -> dict:
         """
         Retrieve a paginated payload of active OPEN job listings along with metadata.
@@ -479,7 +513,7 @@ class JobService:
         from app.core.cache import ttl_cache
 
         # Cache key construction for open jobs listing
-        cache_key = f"jobs:page={page}:limit={limit}:c={company_id}:l={location}:wm={wm}:jt={jt}:el={el}:sal={min_salary}-{max_salary}:s={skills}"
+        cache_key = f"jobs:page={page}:limit={limit}:sort={sort}:c={company_id}:l={location}:wm={wm}:jt={jt}:el={el}:sal={min_salary}-{max_salary}:s={skills}"
         cached_val = ttl_cache.get(cache_key)
         if cached_val is not None:
             return cached_val
@@ -496,7 +530,8 @@ class JobService:
             experience_level=el,
             min_salary=min_salary,
             max_salary=max_salary,
-            skills=skills_list
+            skills=skills_list,
+            sort=sort
         )
         
         # Calculate pagination parameters

@@ -132,15 +132,18 @@ async def get_company_applications(
             },
             "candidate": {
                 "id": app_record.user.id if app_record.user else 0,
-                "name": app_record.user.name if app_record.user else "Unknown Candidate",
+                "name": (app_record.user.profile.full_name if app_record.user and app_record.user.profile and app_record.user.profile.full_name else (app_record.user.name if app_record.user else "Unknown Candidate")),
+                "full_name": (app_record.user.profile.full_name if app_record.user and app_record.user.profile and app_record.user.profile.full_name else (app_record.user.name if app_record.user else "Unknown Candidate")),
                 "email": app_record.user.email if app_record.user else "",
                 "profile": app_record.user.profile if app_record.user else None
             },
             "resume": {
-                "id": app_record.resume.id,
-                "file_name": app_record.resume.file_name,
-                "file_path": app_record.resume.file_path
-            } if app_record.resume else None
+                "id": (app_record.resume or getattr(app_record.user, "resume", None)).id,
+                "file_name": (app_record.resume or getattr(app_record.user, "resume", None)).file_name or "resume.pdf",
+                "resume_file_name": (app_record.resume or getattr(app_record.user, "resume", None)).file_name or "resume.pdf",
+                "file_path": f"/api/v1/applications/{app_record.id}/resume",
+                "resume_url_or_path": f"/api/v1/applications/{app_record.id}/resume"
+            } if (app_record.resume or getattr(app_record.user, "resume", None)) else None
         })
 
     return {
@@ -168,6 +171,11 @@ async def get_application_details(
     """
     app_record = await service.get_application_details(application_id=application_id, current_user=current_user)
     
+    resume_obj = app_record.resume
+    if not resume_obj and app_record.user_id:
+        from app.repositories.resumes import ResumeRepository
+        resume_obj = await ResumeRepository().get_by_user_id(service.db, user_id=app_record.user_id)
+
     # Structure details to align with ApplicationDetailResponse
     return {
         "id": app_record.id,
@@ -184,16 +192,61 @@ async def get_application_details(
             "job_type": app_record.job.job_type.value if hasattr(app_record.job.job_type, "value") else app_record.job.job_type
         },
         "candidate": {
-            "id": app_record.user.id,
-            "name": app_record.user.name,
-            "profile": app_record.user.profile
+            "id": app_record.user.id if app_record.user else 0,
+            "name": (app_record.user.profile.full_name if app_record.user and app_record.user.profile and app_record.user.profile.full_name else (app_record.user.name if app_record.user else "Unknown Candidate")),
+            "email": app_record.user.email if app_record.user else "",
+            "profile": app_record.user.profile if app_record.user else None
         },
         "resume": {
-            "id": app_record.resume.id,
-            "file_name": app_record.resume.file_name,
-            "file_path": app_record.resume.file_path
-        } if app_record.resume else None
+            "id": resume_obj.id,
+            "file_name": resume_obj.file_name or "resume.pdf",
+            "resume_file_name": resume_obj.file_name or "resume.pdf",
+            "file_path": f"/api/v1/applications/{app_record.id}/resume",
+            "resume_url_or_path": f"/api/v1/applications/{app_record.id}/resume"
+        } if resume_obj else None
     }
+
+
+@router.get(
+    "/{application_id}/resume",
+    status_code=status.HTTP_200_OK,
+    summary="View or download candidate application resume PDF",
+    description="Streams the candidate's resume PDF file for an application."
+)
+async def get_application_resume_file(
+    application_id: int,
+    current_user: User = Depends(get_current_active_user),
+    service: ApplicationService = Depends(get_application_service)
+):
+    """
+    Stream the candidate's resume PDF for an application.
+    Accessible by JobSeeker owner, Recruiter, Company Owner, or Admin.
+    """
+    import os
+    from fastapi.responses import FileResponse
+    from fastapi import HTTPException
+
+    app_record = await service.get_application_details(application_id=application_id, current_user=current_user)
+    
+    resume_obj = app_record.resume
+    if not resume_obj and app_record.user_id:
+        from app.repositories.resumes import ResumeRepository
+        resume_obj = await ResumeRepository().get_by_user_id(service.db, user_id=app_record.user_id)
+
+    if not resume_obj or not resume_obj.file_path or not os.path.exists(resume_obj.file_path):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No resume file associated with this candidate profile or file missing on disk."
+        )
+
+    return FileResponse(
+        path=resume_obj.file_path,
+        media_type="application/pdf",
+        filename=resume_obj.file_name or "resume.pdf",
+        headers={
+            "Content-Disposition": f'inline; filename="{resume_obj.file_name or "resume.pdf"}"'
+        }
+    )
 
 
 @router.patch(

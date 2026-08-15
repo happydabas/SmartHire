@@ -34,12 +34,19 @@ export const StageSelector = ({ applicationId, currentStage, onUpdateSuccess }) 
     setConfirmOpen(false);
     setIsLoading(true);
     try {
-      await applicationService.updateApplicationStatus(applicationId, stageToTransition, user?.name);
+      const rawId = applicationId || window.location.pathname.split('/').filter(Boolean).pop();
+      const validId = parseInt(rawId, 10);
+      if (!validId || isNaN(validId)) {
+        throw new Error('Application ID is invalid or missing');
+      }
+      await applicationService.updateApplicationStatus(validId, stageToTransition, user?.name);
       showSuccess('Application status updated successfully.');
       setSelectedStage(stageToTransition);
       onUpdateSuccess?.(stageToTransition);
     } catch (err) {
-      showError('Failed to update stage. Please try again.');
+      console.error("Error updating application stage:", err);
+      const msg = err.response?.data?.detail || err.message || 'Failed to update stage. Please try again.';
+      showError(msg);
       // Revert selection back to current status
       setSelectedStage(normalizedCurrent);
     } finally {

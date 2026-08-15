@@ -17,6 +17,7 @@ import AnalyticsCard from '@/components/admin/AnalyticsCard';
 import QuickActions from '@/components/admin/QuickActions';
 import DashboardSkeleton from '@/components/admin/DashboardSkeleton';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 
 export function AdminDashboard() {
   const [data, setData] = useState(null);
@@ -137,14 +138,10 @@ export function AdminDashboard() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
       {/* Dashboard Heading Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-          Admin Dashboard
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-          SmartHire global site metrics, user logs, and system operations.
-        </p>
-      </div>
+      <PageHeader
+        title="Admin Console"
+        subtitle="SmartHire global site metrics, user logs, and system operations."
+      />
 
       {/* Grid of stats cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

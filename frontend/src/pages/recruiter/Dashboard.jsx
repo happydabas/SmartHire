@@ -1,35 +1,159 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ReactECharts from 'echarts-for-react';
 import {
   Briefcase,
-  Inbox,
-  TrendingUp,
-  Activity,
-  PlusCircle,
   Users,
+  TrendingUp,
+  Clock,
+  ChevronRight,
+  MoreHorizontal,
+  Code2,
+  Atom,
+  Cloud,
   AlertCircle,
-  Calendar,
-  Eye,
-  CheckCircle,
-  FileClock,
-  Sparkles,
-  ClipboardList
+  Inbox
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { recruiterService } from '@/services/recruiter/recruiterService';
 import { formatDate } from '@/utils/formatDate';
-
-// Reusable UI components
-import StatCard from '@/components/ui/StatCard';
-import DataTable from '@/components/ui/DataTable';
-import Button from '@/components/ui/Button';
-import Badge from '@/components/ui/Badge';
-import Spinner from '@/components/ui/Spinner';
-import EmptyState from '@/components/common/EmptyState';
-import EmptyRecruiterJobs from '@/components/common/EmptyRecruiterJobs';
+import { formatJobType, formatWorkMode } from '@/utils/enumFormatters';
 import Card from '@/components/ui/Card';
-import SkeletonTable from '@/components/common/SkeletonTable';
-import StageBadge from '@/components/ats/StageBadge';
+import Button from '@/components/ui/Button';
+
+// 1. ECharts Donut Chart Component for Active Applications
+function StageEChart({ stageCounts, totalApplications }) {
+  const data = [
+    { value: stageCounts?.applied || 0, name: 'Applied' },
+    { value: stageCounts?.screening || 0, name: 'Screening' },
+    { value: stageCounts?.interview || 0, name: 'Interview' },
+    { value: stageCounts?.selected || 0, name: 'Offer' },
+    { value: stageCounts?.rejected || 0, name: 'Rejected' }
+  ];
+
+  const total = data.reduce((acc, d) => acc + d.value, 0);
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)',
+      backgroundColor: '#0f172a',
+      borderWidth: 0,
+      textStyle: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' }
+    },
+    legend: {
+      orient: 'vertical',
+      right: 0,
+      top: 'center',
+      itemWidth: 10,
+      itemHeight: 10,
+      itemGap: 10,
+      textStyle: {
+        color: '#64748b',
+        fontSize: 11,
+        fontWeight: '600'
+      }
+    },
+    color: ['#3b82f6', '#f59e0b', '#a855f7', '#10b981', '#f43f5e'],
+    series: [
+      {
+        name: 'Stage Distribution',
+        type: 'pie',
+        radius: ['52%', '78%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 5,
+          borderColor: '#ffffff',
+          borderWidth: 2
+        },
+        label: { show: false },
+        emphasis: {
+          scale: true,
+          scaleSize: 6,
+          label: { show: false }
+        },
+        data: total > 0 ? data : [{ value: 1, name: 'No Applications', itemStyle: { color: '#e2e8f0' } }]
+      }
+    ]
+  };
+
+  return (
+    <div className="relative w-full h-40">
+      <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />
+      {/* Center text overlay */}
+      <div className="absolute left-[35%] top-[50%] transform -translate-x-1/2 -translate-y-1/2 pointer-events-none text-center">
+        <span className="text-xl font-black text-slate-800 dark:text-white leading-none block">{totalApplications || 0}</span>
+        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">Total</span>
+      </div>
+    </div>
+  );
+}
+
+// 2. ECharts Smooth Area Curve Component for Application Trend
+function TrendEChart({ trendData }) {
+  const dates = trendData?.map(d => d.date) || [];
+  const values = trendData?.map(d => d.value) || [];
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      backgroundColor: '#0f172a',
+      borderWidth: 0,
+      textStyle: { color: '#ffffff', fontSize: 12 },
+      axisPointer: { type: 'line', lineStyle: { color: '#94a3b8', width: 1, type: 'dashed' } }
+    },
+    grid: {
+      top: 15,
+      bottom: 25,
+      left: 25,
+      right: 15
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: '#94a3b8', fontSize: 10, fontWeight: '600' }
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: '#f1f5f9', type: 'dashed' } },
+      axisLabel: { color: '#94a3b8', fontSize: 10, fontWeight: '600' }
+    },
+    series: [
+      {
+        data: values,
+        type: 'line',
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        itemStyle: { color: '#3b82f6', borderWidth: 2, borderColor: '#ffffff' },
+        lineStyle: { width: 3, color: '#3b82f6' },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(59, 130, 246, 0.35)' },
+              { offset: 1, color: 'rgba(59, 130, 246, 0.0)' }
+            ]
+          }
+        }
+      }
+    ]
+  };
+
+  return (
+    <div className="w-full h-36">
+      <ReactECharts option={option} style={{ height: '100%', width: '100%' }} />
+    </div>
+  );
+}
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -38,7 +162,6 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
 
   const fetchDashboardData = async () => {
     try {
@@ -58,13 +181,6 @@ export function Dashboard() {
     fetchDashboardData();
   }, []);
 
-  const triggerToast = (msg) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3000);
-  };
-
-
-
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-[60vh] p-4">
@@ -82,426 +198,324 @@ export function Dashboard() {
     );
   }
 
-  const { stats, recentApplications, analytics, stageCounts } = dashboardData || {
-    stats: { totalJobs: 0, activeJobs: 0, draftJobs: 0, closedJobs: 0, totalApplications: 0 },
+  const { stats, topActiveJobs, recentApplications, stageCounts, trendData } = dashboardData || {
+    stats: { activeJobs: 0, totalApplications: 0 },
+    topActiveJobs: [],
     recentApplications: [],
-    analytics: { applicationsThisWeek: 0, activePipelines: 0, avgApplicationsPerJob: 0 },
-    stageCounts: { applied: 0, screening: 0, interview: 0, selected: 0, rejected: 0 }
+    stageCounts: { applied: 0, screening: 0, interview: 0, selected: 0, rejected: 0 },
+    trendData: []
   };
 
-  if (!loading && stats.totalJobs === 0) {
-    return (
-      <div className="max-w-xl mx-auto py-12 px-4 space-y-6 animate-fadeIn">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Recruiter Workspace</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage jobs, candidates, and hiring analytics.</p>
-        </div>
-        <EmptyRecruiterJobs variant="dashboard" />
-      </div>
-    );
-  }
-
-  // Map status name to UI Badge color variant
-  const getStatusVariant = (status) => {
-    if (!status) return 'neutral';
-    const s = status.toLowerCase();
-    if (s.includes('accept') || s.includes('hire') || s.includes('success') || s.includes('select')) return 'success';
-    if (s.includes('reject') || s.includes('decline') || s.includes('fail')) return 'danger';
-    if (s.includes('interview') || s.includes('screening') || s.includes('review') || s.includes('schedule')) return 'warning';
-    if (s.includes('applied') || s.includes('submit') || s.includes('pending')) return 'primary';
-    return 'neutral';
+  const getJobIcon = (idx) => {
+    if (idx === 0) return <Code2 className="w-4 h-4 text-blue-600" />;
+    if (idx === 1) return <Atom className="w-4 h-4 text-blue-600" />;
+    return <Cloud className="w-4 h-4 text-blue-600" />;
   };
 
-  const renderMobileCard = (row) => (
-    <Card key={row.id} className="p-5 border border-slate-100 bg-white space-y-4 shadow-sm rounded-2xl">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
-            {row.candidate?.name?.[0]?.toUpperCase() || 'C'}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-bold text-slate-800 text-sm">{row.candidate?.name || 'Anonymous candidate'}</span>
-            <span className="text-[10px] text-slate-400 font-semibold">{row.candidate?.email}</span>
-          </div>
-        </div>
-        <StageBadge stage={row.status} />
-      </div>
-      <div className="flex justify-between items-center text-xs font-semibold text-slate-600 pt-3 border-t border-slate-50">
-        <span className="text-slate-700">{row.job?.title || 'Unknown Job'}</span>
-        <span className="text-[10px] text-slate-400">{formatDate(row.applied_at || row.created_at)}</span>
-      </div>
-      <div className="pt-2 flex justify-end">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => triggerToast(`Candidate profile view for ${row.candidate?.name || 'Applicant'} is coming soon!`)}
-          className="w-full rounded-xl font-bold py-1.5 border border-slate-200 flex items-center justify-center gap-1"
-        >
-          <Eye className="w-3.5 h-3.5" />
-          <span>View</span>
-        </Button>
-      </div>
-    </Card>
-  );
+  const getMatchScoreBadge = (score) => {
+    const s = score || 85;
+    if (s >= 90) return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/30">{s}%</span>;
+    if (s >= 85) return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/30">{s}%</span>;
+    return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/30">{s}%</span>;
+  };
 
-  // Reusable columns definition for Recent Applications Table
-  const tableColumns = [
-    {
-      header: 'Applicant Name',
-      key: 'candidate.name',
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0">
-            {row.candidate?.name?.[0]?.toUpperCase() || 'C'}
-          </div>
-          <div className="flex flex-col">
-            <span className="font-semibold text-slate-800 text-sm">{row.candidate?.name || 'Anonymous candidate'}</span>
-            <span className="text-[10px] text-slate-400 font-medium">{row.candidate?.email}</span>
-          </div>
-        </div>
-      )
-    },
-    {
-      header: 'Job Title',
-      key: 'job.title',
-      render: (row) => (
-        <span className="font-semibold text-slate-700 text-sm leading-snug">{row.job?.title || 'Unknown Job'}</span>
-      )
-    },
-    {
-      header: 'Applied Date',
-      key: 'applied_at',
-      render: (row) => (
-        <div className="flex items-center gap-1.5 text-slate-500 text-xs">
-          <Calendar className="w-3.5 h-3.5" />
-          <span>{formatDate(row.applied_at || row.created_at)}</span>
-        </div>
-      )
-    },
-    {
-      header: 'Current Stage',
-      key: 'status',
-      render: (row) => (
-        <StageBadge stage={row.status} />
-      )
-    },
-    {
-      header: 'Action',
-      align: 'center',
-      render: (row) => (
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => triggerToast(`Candidate profile view for ${row.candidate?.name || 'Applicant'} is coming soon!`)}
-          className="rounded-xl px-3 py-1.5 font-bold border border-slate-200 inline-flex items-center gap-1.5 hover:bg-slate-50"
-        >
-          <Eye className="w-3.5 h-3.5 text-slate-500" />
-          <span>View</span>
-        </Button>
-      )
+  const getStageBadge = (stageName) => {
+    const st = (stageName || 'Applied').toLowerCase();
+    if (st.includes('screen')) {
+      return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/30">Screening</span>;
     }
-  ];
+    if (st.includes('interview')) {
+      return <span className="px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 border border-purple-200/60 dark:border-purple-500/30">Interview</span>;
+    }
+    if (st.includes('select') || st.includes('offer')) {
+      return <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200/60 dark:border-emerald-500/30">Offer</span>;
+    }
+    return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/30">Applied</span>;
+  };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto relative">
-      {/* Toast Alert Banner */}
-      {toastMessage && (
-        <div className="fixed top-6 right-6 z-50 bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-xl flex items-center gap-3 border border-slate-800 animate-slide-in">
-          <div className="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-sm">
-            <Sparkles className="w-4 h-4 text-blue-100" />
-          </div>
-          <div>
-            <p className="text-xs font-bold text-slate-100">{toastMessage}</p>
-            <p className="text-[10px] text-slate-400 font-medium">Feature coming soon in the next release.</p>
-          </div>
-        </div>
-      )}
-
-      {/* 1. Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 bottom-0 top-0 opacity-10 pointer-events-none flex items-center justify-center pr-12">
-          <TrendingUp className="w-64 h-64 text-blue-300" />
-        </div>
-        <div className="relative z-10 space-y-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-blue-200 bg-blue-500/20 px-3 py-1 rounded-full border border-blue-500/20">
-            Recruiter Dashboard
-          </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Welcome back, {user?.name || 'Recruiter'}!
-          </h1>
-          <p className="text-slate-300 text-xs sm:text-sm max-w-md leading-relaxed font-medium">
-            Monitor active pipelines, publish jobs, and review qualified candidates inside your talent acquisition console.
-          </p>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-8 pt-4 sm:pt-6 pb-12 animate-in fade-in duration-200">
+      
+      {/* 1. Header Section */}
+      <div className="pt-2">
+        <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          Welcome back, {user?.name?.split(' ')[0] || 'Harsh'}!
+        </h1>
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">
+          Monitor your active jobs, track applications, and find the best talent for your team.
+        </p>
       </div>
 
-      {/* 2. Quick Actions Panel */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-600" />
-          <span>Quick Actions</span>
-        </h2>
-        <div className={`grid grid-cols-1 ${Boolean(user?.is_owner || user?.role === 'company_owner') ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
-          {Boolean(user?.is_owner || user?.role === 'company_owner') && (
-            <Button
-              onClick={() => navigate('/recruiter/jobs/create')}
-              className="flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 border border-transparent transition-all"
-            >
-              <PlusCircle className="w-5 h-5" />
-              <span>Create New Job</span>
-            </Button>
-          )}
+      {/* 2. Top Grid of 3 Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+        
+        {/* Card 1: Active Jobs */}
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Active Jobs</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Currently open job listings</p>
+              </div>
+            </div>
 
-          <Button
-            onClick={() => navigate('/recruiter/jobs')}
-            className="flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold hover:shadow-md transition-all"
-          >
-            <Briefcase className="w-5 h-5 text-slate-500" />
-            <span>Manage Jobs</span>
-          </Button>
+            {/* Metric + Pill */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{stats.activeJobs || 0}</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                <span className="text-xs">↑</span> Active
+              </span>
+            </div>
 
-          <Button
-            onClick={() => navigate('/recruiter/applicants')}
-            className="flex items-center justify-center gap-2.5 py-4 px-6 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold hover:shadow-md transition-all"
-          >
-            <Users className="w-5 h-5 text-slate-500" />
-            <span>View Applicants</span>
-          </Button>
-        </div>
-      </section>
-
-      {/* 3. Overview statistics Cards Grid */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-          <ClipboardList className="w-5 h-5 text-blue-600" />
-          <span>Hiring Snapshot</span>
-        </h2>
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 animate-pulse">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Card key={i} className="p-5 space-y-3 border border-slate-100 bg-white">
-                <div className="flex items-center justify-between">
-                  <div className="h-3 bg-slate-200 rounded-lg w-20"></div>
-                  <div className="w-8 h-8 bg-slate-200 rounded-xl"></div>
+            {/* Job List */}
+            <div className="space-y-3 pt-2">
+              {topActiveJobs.length === 0 ? (
+                <div className="py-6 text-center text-xs text-slate-400 font-medium bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  No active job postings currently open.
                 </div>
-                <div className="h-7 bg-slate-200 rounded-xl w-12"></div>
-                <div className="h-3 bg-slate-200 rounded-lg w-24"></div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            <StatCard
-              title="Total Jobs"
-              value={stats.totalJobs}
-              description="Overall job postings created"
-              icon={<Briefcase className="w-5 h-5" />}
-              iconBgColor="bg-slate-50"
-              iconColor="text-slate-600"
-            />
-            <StatCard
-              title="Active Jobs"
-              value={stats.activeJobs}
-              description="Open listings collecting applications"
-              icon={<CheckCircle className="w-5 h-5" />}
-              iconBgColor="bg-emerald-50"
-              iconColor="text-emerald-600"
-            />
-            <StatCard
-              title="Draft Jobs"
-              value={stats.draftJobs}
-              description="Postings pending final reviews"
-              icon={<FileClock className="w-5 h-5" />}
-              iconBgColor="bg-amber-50"
-              iconColor="text-amber-600"
-            />
-            <StatCard
-              title="Closed Jobs"
-              value={stats.closedJobs}
-              description="Fulfilled or expired listings"
-              icon={<AlertCircle className="w-5 h-5" />}
-              iconBgColor="bg-rose-50"
-              iconColor="text-rose-600"
-            />
-            <StatCard
-              title="Total Applications"
-              value={stats.totalApplications}
-              description="Total candidates applied"
-              icon={<Inbox className="w-5 h-5" />}
-              iconBgColor="bg-blue-50"
-              iconColor="text-blue-600"
-            />
-          </div>
-        )}
-      </section>
+              ) : (
+                topActiveJobs.map((job, idx) => (
+                  <div
+                    key={job.id}
+                    onClick={() => navigate(`/recruiter/jobs`)}
+                    className="flex items-center justify-between p-2.5 rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shrink-0">
+                        {getJobIcon(idx)}
+                      </div>
+                      <div className="truncate">
+                        <p className="font-bold text-slate-800 dark:text-slate-200 text-xs truncate group-hover:text-blue-600 transition-colors">
+                          {job.title}
+                        </p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
+                          {job.location} • {job.work_mode}
+                        </p>
+                      </div>
+                    </div>
 
-      {/* Applications by Stage Analytics Cards */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-          <Users className="w-5 h-5 text-blue-600" />
-          <span>Applications by Pipeline Stage</span>
-        </h2>
-        {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 animate-pulse">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Card key={i} className="p-5 space-y-3 border border-slate-100 bg-white">
-                <div className="h-3 bg-slate-200 rounded-lg w-20"></div>
-                <div className="h-7 bg-slate-200 rounded-xl w-12"></div>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-500">Applied</span>
-              </div>
-              <h3 className="text-3xl font-black text-slate-800">{stageCounts.applied}</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Initial submissions received</p>
-            </Card>
-            
-            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-500">Screening</span>
-              </div>
-              <h3 className="text-3xl font-black text-slate-800">{stageCounts.screening}</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Candidates under active review</p>
-            </Card>
-            
-            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-purple-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-500">Interview</span>
-              </div>
-              <h3 className="text-3xl font-black text-slate-800">{stageCounts.interview}</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Scheduled and ongoing meetings</p>
-            </Card>
-            
-            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-500">Selected</span>
-              </div>
-              <h3 className="text-3xl font-black text-slate-800">{stageCounts.selected}</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Offers extended or accepted</p>
-            </Card>
-            
-            <Card className="p-5 border border-slate-100 bg-white rounded-3xl space-y-3 shadow-sm hover:shadow-lg hover:scale-[1.02] transition-all duration-300">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />
-                <span className="text-xs font-bold text-slate-500">Rejected</span>
-              </div>
-              <h3 className="text-3xl font-black text-slate-800">{stageCounts.rejected}</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Archived or disqualified</p>
-            </Card>
-          </div>
-        )}
-      </section>
-
-      {/* 4. Analytics & Recent Applications split */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Applications Table (Left/Main Column) */}
-        <div className="lg:col-span-2 space-y-4 min-w-0">
-          <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <span>Recent Applications</span>
-            <span className="text-[11px] font-bold px-2 py-0.5 bg-slate-100 text-slate-500 rounded-full border border-slate-200">
-              Latest 5
-            </span>
-          </h2>
-
-          {loading ? (
-            <SkeletonTable rows={5} cols={4} />
-          ) : recentApplications.length === 0 ? (
-            <EmptyState
-              title="No applications received"
-              description="Your job postings haven't received any applications yet. Create or check open jobs details."
-              icon={<Inbox className="w-10 h-10" />}
-              className="bg-white py-14"
-            />
-          ) : (
-            <DataTable
-              columns={tableColumns}
-              data={recentApplications}
-              rowKey="id"
-              renderMobileCard={renderMobileCard}
-              emptyState={
-                <EmptyState
-                  title="No Applications"
-                  description="No candidate applications matches."
-                  icon={<Inbox className="w-8 h-8" />}
-                />
-              }
-            />
-          )}
-        </div>
-
-        {/* Analytics Highlights Panel (Right Column) */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Activity className="w-5 h-5 text-blue-600" />
-            <span>Hiring Performance</span>
-          </h2>
-
-          {loading ? (
-            <Card className="p-6 border border-slate-100 shadow-sm bg-white space-y-6 rounded-3xl animate-pulse">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between py-2">
-                  <div className="space-y-2 flex-grow">
-                    <div className="h-3 bg-slate-200 rounded-lg w-2/3"></div>
-                    <div className="h-6 bg-slate-200 rounded-xl w-12"></div>
-                    <div className="h-2.5 bg-slate-200 rounded-lg w-1/2"></div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200 text-xs block">{job.applicationsCount}</span>
+                        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-medium block">applications</span>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-transform group-hover:translate-x-0.5" />
+                    </div>
                   </div>
-                  <div className="w-11 h-11 bg-slate-200 rounded-2xl shrink-0"></div>
-                </div>
-              ))}
-            </Card>
-          ) : (
-            <Card className="p-6 border border-slate-100 shadow-sm bg-white space-y-6 rounded-3xl">
-              {/* Metric 1 */}
-              <div className="flex items-center justify-between py-2">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Applications This Week</p>
-                  <p className="text-2xl font-black text-slate-800">{analytics.applicationsThisWeek}</p>
-                  <p className="text-[10px] text-slate-400 font-medium">New candidates added in last 7 days</p>
-                </div>
-                <div className="p-3 bg-blue-50/50 text-blue-600 rounded-2xl">
-                  <Calendar className="w-5 h-5" />
-                </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <button
+              onClick={() => navigate('/recruiter/jobs')}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 transition-colors"
+            >
+              <span>View all jobs</span>
+              <span>→</span>
+            </button>
+          </div>
+        </Card>
+
+        {/* Card 2: Active Applications (ECHART DONUT CHART) */}
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5" />
               </div>
-
-              <hr className="border-slate-100" />
-
-              {/* Metric 2 */}
-              <div className="flex items-center justify-between py-2">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Active Hiring Pipelines</p>
-                  <p className="text-2xl font-black text-slate-800">{analytics.activePipelines}</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Open postings with applicant activity</p>
-                </div>
-                <div className="p-3 bg-emerald-50/50 text-emerald-600 rounded-2xl">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Active Applications</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Total applications received</p>
               </div>
+            </div>
 
-              <hr className="border-slate-100" />
+            {/* Metric + Pill */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalApplications || 0}</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                <span className="text-xs">↑</span> Total
+              </span>
+            </div>
 
-              {/* Metric 3 */}
-              <div className="flex items-center justify-between py-2">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Avg Applications / Job</p>
-                  <p className="text-2xl font-black text-slate-800">{analytics.avgApplicationsPerJob}</p>
-                  <p className="text-[10px] text-slate-400 font-medium">Overall ratio of candidates per listing</p>
-                </div>
-                <div className="p-3 bg-purple-50/50 text-purple-600 rounded-2xl">
-                  <Users className="w-5 h-5" />
-                </div>
+            {/* ECharts Circular Donut */}
+            <StageEChart stageCounts={stageCounts} totalApplications={stats.totalApplications} />
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80">
+            <button
+              onClick={() => navigate('/recruiter/applicants')}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 transition-colors"
+            >
+              <span>View all applications</span>
+              <span>→</span>
+            </button>
+          </div>
+        </Card>
+
+        {/* Card 3: Application Trend (ECHART AREA TREND) */}
+        <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col justify-between space-y-5">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5" />
               </div>
-            </Card>
-          )}
-        </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white leading-tight">Application Trend</h3>
+                <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Last 14 days</p>
+              </div>
+            </div>
+
+            {/* Metric + Pill */}
+            <div className="flex items-baseline gap-3">
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{stats.totalApplications || 0}</span>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">
+                <span className="text-xs">↑</span> 14 Days
+              </span>
+            </div>
+
+            {/* ECharts Smooth Area Curve */}
+            <TrendEChart trendData={trendData} />
+          </div>
+        </Card>
       </div>
+
+      {/* 3. Bottom Table Card: Recent Applications */}
+      <Card className="p-6 sm:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight">Recent Applications</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">Latest candidates who applied to your jobs</p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => navigate('/recruiter/applicants')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1 transition-colors"
+          >
+            <span>View all</span>
+            <span>→</span>
+          </button>
+        </div>
+
+        {/* Responsive Table */}
+        {recentApplications.length === 0 ? (
+          <div className="py-12 text-center space-y-3 bg-slate-50/50 dark:bg-slate-900/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+            <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+              <Inbox className="w-5 h-5" />
+            </div>
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">No applications received yet</p>
+            <p className="text-xs text-slate-400 font-medium max-w-sm mx-auto">
+              Candidates who apply for your active job listings will appear here in real-time.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-100 dark:border-slate-800 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <th className="py-3 px-4">Candidate</th>
+                  <th className="py-3 px-4">Job Title</th>
+                  <th className="py-3 px-4">Match Score</th>
+                  <th className="py-3 px-4">Stage</th>
+                  <th className="py-3 px-4">Applied On</th>
+                  <th className="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                {recentApplications.map((row) => {
+                  const candidateName = row.candidate?.name || row.candidate?.full_name || row.candidate?.profile?.full_name || row.candidate?.email?.split('@')[0] || 'Candidate';
+                  const candidateEmail = row.candidate?.email || 'Applicant';
+                  const initial = candidateName[0]?.toUpperCase() || 'C';
+
+                  const jobTitle = row.job?.title || row.job_title || 'Job Listing';
+                  const typeLabel = formatJobType(row.job?.job_type) || 'Full-time';
+                  const modeLabel = formatWorkMode(row.job?.work_mode) || 'Remote';
+
+                  return (
+                    <tr key={row.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                      
+                      {/* Candidate Column */}
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          {row.candidate?.avatar ? (
+                            <img
+                              src={row.candidate.avatar}
+                              alt={candidateName}
+                              className="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200 dark:border-slate-700"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold text-xs flex items-center justify-center shrink-0">
+                              {initial}
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-bold text-slate-900 dark:text-white text-sm block leading-snug">
+                              {candidateName}
+                            </span>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium block">
+                              {candidateEmail}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Job Title Column */}
+                      <td className="py-4 px-4">
+                        <div>
+                          <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">
+                            {jobTitle}
+                          </span>
+                          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium block">
+                            {typeLabel} • {modeLabel}
+                          </span>
+                        </div>
+                      </td>
+
+                    {/* Match Score Column */}
+                    <td className="py-4 px-4">
+                      {getMatchScoreBadge(row.match_score || row.ai_match_score || 85)}
+                    </td>
+
+                    {/* Stage Column */}
+                    <td className="py-4 px-4">
+                      {getStageBadge(row.status)}
+                    </td>
+
+                    {/* Applied On Column */}
+                    <td className="py-4 px-4">
+                      <div>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 text-xs block">
+                          {formatDate(row.applied_at || row.created_at)}
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Actions Column */}
+                    <td className="py-4 px-4 text-right">
+                      <button
+                        onClick={() => navigate('/recruiter/applicants')}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <MoreHorizontal className="w-5 h-5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   );
 }

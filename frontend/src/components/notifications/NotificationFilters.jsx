@@ -21,8 +21,8 @@ export function NotificationFilters({ activeFilter, onChangeFilter }) {
             onClick={() => onChangeFilter(f.key)}
             className={`px-6 py-3 text-sm font-black transition-all border-b-2 outline-none ${
               isSelected
-                ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-500'
-                : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-200 dark:hover:text-slate-300 dark:hover:border-slate-700'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400 dark:border-blue-400'
+                : 'border-transparent text-slate-400 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:border-slate-200 dark:hover:border-slate-700'
             }`}
           >
             {f.label}

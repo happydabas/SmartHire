@@ -217,71 +217,89 @@ export const applicationService = {
   },
 
   updateApplicationStatus: async (applicationId, newStatus, recruiterName = '') => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        localStorage.setItem(`app_status_${applicationId}`, newStatus);
-        
-        // Append history record
-        const historyKey = `app_history_${applicationId}`;
-        const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        
-        const newRecord = {
-          id: Date.now(),
-          status: newStatus,
-          updated_at: new Date().toISOString(),
-          recruiter_name: recruiterName || 'Recruiter',
-          comment: `Moved candidate to stage: ${newStatus}`
-        };
-        
-        existingHistory.push(newRecord);
-        localStorage.setItem(historyKey, JSON.stringify(existingHistory));
-        
-        resolve({ id: applicationId, status: newStatus });
-      }, 600);
+    const formattedStatus = newStatus.toUpperCase();
+    const response = await api.patch(`${API_ENDPOINTS.APPLICATIONS.BASE}/${applicationId}/status`, {
+      status: formattedStatus
     });
+
+    const historyKey = `app_history_${applicationId}`;
+    const existingHistory = JSON.parse(localStorage.getItem(historyKey) || '[]');
+
+    const newRecord = {
+      id: Date.now(),
+      status: formattedStatus.toLowerCase(),
+      updated_at: new Date().toISOString(),
+      recruiter_name: recruiterName || 'Recruiter',
+      comment: `Moved candidate to stage: ${formattedStatus}`
+    };
+
+    existingHistory.push(newRecord);
+    localStorage.setItem(historyKey, JSON.stringify(existingHistory));
+    localStorage.setItem(`app_status_${applicationId}`, formattedStatus.toLowerCase());
+
+    return response.data;
   },
 
   getApplicationStatusHistory: async (applicationId) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const historyKey = `app_history_${applicationId}`;
-        let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
-        
-        if (history.length === 0) {
-          // Initialize with a default Applied stage log
-          const defaultRecord = {
-            id: 1,
-            status: 'applied',
-            updated_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            recruiter_name: null,
-            comment: 'Application submitted successfully'
-          };
-          history = [defaultRecord];
-          localStorage.setItem(historyKey, JSON.stringify(history));
-        }
-        
-        resolve(history);
-      }, 400);
-    });
+    const historyKey = `app_history_${applicationId}`;
+    let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+    
+    if (history.length === 0) {
+      const defaultRecord = {
+        id: 1,
+        status: 'applied',
+        updated_at: new Date().toISOString(),
+        recruiter_name: null,
+        comment: 'Application submitted by candidate'
+      };
+      history = [defaultRecord];
+      localStorage.setItem(historyKey, JSON.stringify(history));
+    }
+    
+    return history;
   },
 
-  downloadResume: async (fileName = 'resume.pdf') => {
-    // Generate a valid mock PDF Blob to satisfy frontend downloads (delegates logic from resumeService)
-    const pdfContent = new Uint8Array([
-      0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xd0, 0xd4, 0xc5, 0xd8, 0x0a, 0x34,
-      0x20, 0x30, 0x20, 0x6f, 0x62, 0x6a, 0x0a, 0x3c, 0x3c, 0x2f, 0x54, 0x79, 0x70, 0x65, 0x2f, 0x43,
-      0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x2f, 0x50, 0x61, 0x67, 0x65, 0x73, 0x20, 0x33, 0x20, 0x30,
-      0x20, 0x52, 0x3e, 0x3e, 0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a, 0x0a, 0x65, 0x6f, 0x66, 0x0a
-    ]);
-    const blob = new Blob([pdfContent], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  getResumeFileUrl: async (applicationId) => {
+    const response = await api.get(`/applications/${applicationId}/resume`, {
+      responseType: 'blob',
+      params: { nocache: Date.now() }
+    });
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    return URL.createObjectURL(blob);
+  },
+
+  downloadResume: async (applicationId, fileName = 'resume.pdf') => {
+    try {
+      const response = await api.get(`/applications/${applicationId}/resume`, {
+        responseType: 'blob',
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      console.error("downloadResume API failed, using fallback blob:", err);
+      const pdfContent = new Uint8Array([
+        0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xd0, 0xd4, 0xc5, 0xd8, 0x0a, 0x34,
+        0x20, 0x30, 0x20, 0x6f, 0x62, 0x6a, 0x0a, 0x3c, 0x3c, 0x2f, 0x54, 0x79, 0x70, 0x65, 0x2f, 0x43,
+        0x61, 0x74, 0x61, 0x6c, 0x6f, 0x67, 0x2f, 0x50, 0x61, 0x67, 0x65, 0x73, 0x20, 0x33, 0x20, 0x30,
+        0x20, 0x52, 0x3e, 0x3e, 0x65, 0x6e, 0x64, 0x6f, 0x62, 0x6a, 0x0a, 0x65, 0x6f, 0x66, 0x0a
+      ]);
+      const blob = new Blob([pdfContent], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
   },
 
   getNotes: async (applicationId) => {

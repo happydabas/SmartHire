@@ -75,76 +75,92 @@ export const ImageUploader = ({
   const displayError = error || internalError;
 
   return (
-    <div className="space-y-2.5 w-full">
+    <div className="space-y-3 w-full">
       {label && (
-        <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 pl-0.5 select-none">
+        <span className="block text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider pl-0.5 select-none">
           {label}
         </span>
       )}
 
-      <div
-        onClick={handleContainerClick}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`relative border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-6 text-center cursor-pointer transition-all duration-200 ${
-          isDragOver 
-            ? 'border-blue-500 bg-blue-50/30' 
-            : src 
-              ? 'border-slate-200 bg-white hover:border-blue-400' 
-              : 'border-slate-300 bg-slate-50/50 hover:bg-slate-50 hover:border-slate-400'
-        } ${isLoading ? 'opacity-70 pointer-events-none' : ''} ${className}`}
-        {...props}
-      >
-        {src ? (
-          /* Preview state */
-          <div className="flex flex-col items-center gap-4 py-2 w-full">
-            <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-100 bg-white shadow-sm flex items-center justify-center p-1.5">
-              <img src={src} alt="Upload Preview" className="max-w-full max-h-full object-contain" />
-            </div>
-            
-            <div className="flex items-center gap-3.5">
-              <button
-                type="button"
-                className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition-colors"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-                <span>Replace Logo</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleRemove}
-                className="text-xs font-bold text-rose-500 hover:text-rose-700 flex items-center gap-1 transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Remove</span>
-              </button>
-            </div>
+      {src ? (
+        /* Preview State: Full Box Coverage */
+        <div className="space-y-3 w-full">
+          <div 
+            onClick={handleContainerClick}
+            className={`w-full h-48 sm:h-56 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#15161e] p-4 flex items-center justify-center shadow-sm overflow-hidden cursor-pointer hover:border-blue-500 transition-all relative group ${
+              isLoading ? 'opacity-70 pointer-events-none' : ''
+            } ${className}`}
+          >
+            <img 
+              src={src} 
+              alt="Company Logo Preview" 
+              className="w-full h-full object-contain p-2 transition-transform duration-200 group-hover:scale-105" 
+            />
+            {isLoading && (
+              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
+                <Spinner size="md" />
+              </div>
+            )}
           </div>
-        ) : (
-          /* Dropzone state */
-          <div className="space-y-2">
-            <div className="mx-auto w-10 h-10 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center">
-              <UploadCloud className="w-5.5 h-5.5" />
+
+          {/* Action buttons MOVED OUTSIDE of the logo box */}
+          <div className="flex items-center justify-center gap-2.5 pt-1">
+            <button
+              type="button"
+              onClick={handleContainerClick}
+              disabled={isLoading}
+              className="px-4 py-2 text-xs font-black text-blue-600 dark:text-blue-400 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 border border-blue-200 dark:border-blue-800 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Replace Logo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={isLoading}
+              className="px-4 py-2 text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/60 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Remove</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Dropzone State */
+        <div
+          onClick={handleContainerClick}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`relative border-2 border-dashed rounded-2xl flex flex-col items-center justify-center p-8 text-center cursor-pointer transition-all duration-200 h-48 sm:h-56 ${
+            isDragOver 
+              ? 'border-blue-500 bg-blue-50/30 dark:bg-blue-950/30' 
+              : 'border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-[#15161e] hover:bg-slate-50 dark:hover:bg-slate-900/50 hover:border-slate-400 dark:hover:border-slate-700'
+          } ${isLoading ? 'opacity-70 pointer-events-none' : ''} ${className}`}
+          {...props}
+        >
+          <div className="space-y-3">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-sm">
+              <UploadCloud className="w-6 h-6" />
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-bold text-slate-700">
-                Drag and drop your logo, or <span className="text-blue-600 hover:underline">browse</span>
+              <p className="text-xs font-black text-slate-800 dark:text-white">
+                Drag and drop your logo, or <span className="text-blue-600 dark:text-blue-400 hover:underline">browse</span>
               </p>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                 PNG, JPG, or JPEG (Max 2MB)
               </p>
             </div>
           </div>
-        )}
 
-        {/* Loading overlay */}
-        {isLoading && (
-          <div className="absolute inset-0 bg-slate-100/50 flex items-center justify-center rounded-2xl">
-            <Spinner size="md" />
-          </div>
-        )}
-      </div>
+          {isLoading && (
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] flex items-center justify-center rounded-2xl">
+              <Spinner size="md" />
+            </div>
+          )}
+        </div>
+      )}
 
       <input
         type="file"

@@ -11,6 +11,7 @@ import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import AvatarUploader from '@/components/ui/AvatarUploader';
 import SkeletonProfile from '@/components/common/SkeletonProfile';
+import PageHeader from '@/components/ui/PageHeader';
 
 // Simple Phone validation helper
 const PHONE_REGEX = /^\+?[0-9\s\-]{7,20}$/;
@@ -69,7 +70,6 @@ export function RecruiterProfile() {
       setUploadLoading(true);
       setErrors(prev => ({ ...prev, avatar: '' }));
       
-      // Upload photo (converts to base64 Data URL)
       const base64Url = await userService.uploadAvatar(file);
       setProfileImage(base64Url);
       
@@ -111,7 +111,7 @@ export function RecruiterProfile() {
 
     try {
       setSaveLoading(true);
-      const updated = await userService.updateProfile({
+      await userService.updateProfile({
         name: name.trim(),
         phone: phone.trim(),
         profile_image: profileImage
@@ -131,7 +131,7 @@ export function RecruiterProfile() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12 relative animate-in fade-in duration-200">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12 relative animate-in fade-in duration-200">
       {/* Toast notifier */}
       {toastMessage && (
         <Toast
@@ -141,17 +141,17 @@ export function RecruiterProfile() {
         />
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Recruiter Profile</h1>
-        <p className="text-slate-500 text-sm mt-1">Manage credentials, details information, and recruiter settings.</p>
-      </div>
+      {/* 100% Completely Fixed Title Header */}
+      <PageHeader
+        title="Recruiter Profile"
+        subtitle="Manage credentials, contact details, and recruiter settings."
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         
         {/* Left Side: Avatar Uploader Card */}
-        <div className="md:col-span-1 space-y-4">
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl shadow-sm flex flex-col items-center">
+        <div className="lg:col-span-1 space-y-4">
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col items-center">
             <AvatarUploader
               src={profileImage}
               name={name}
@@ -162,13 +162,13 @@ export function RecruiterProfile() {
             />
 
             {/* Headline fields */}
-            <div className="text-center mt-6 space-y-1.5 border-t border-slate-100 pt-5 w-full">
+            <div className="text-center mt-6 space-y-2 border-t border-slate-100 dark:border-slate-800 pt-5 w-full">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Assigned Role</span>
-              <h4 className="font-extrabold text-slate-700 text-xs flex items-center justify-center gap-1">
-                <Briefcase className="w-3.5 h-3.5 text-slate-400" />
+              <h4 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs flex items-center justify-center gap-1.5">
+                <Briefcase className="w-4 h-4 text-slate-400" />
                 <span>{jobTitle}</span>
               </h4>
-              <p className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2.5 py-0.5 rounded-lg inline-block select-none">
+              <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1 rounded-lg inline-block select-none">
                 {department}
               </p>
             </div>
@@ -176,14 +176,14 @@ export function RecruiterProfile() {
         </div>
 
         {/* Right Side: Details Form Card */}
-        <div className="md:col-span-2">
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <User className="w-5 h-5 text-blue-600 shrink-0" />
-              <h3 className="text-sm font-extrabold text-slate-800 tracking-tight">Personal Details</h3>
+        <div className="lg:col-span-2">
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm space-y-6">
+            <div className="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <User className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <h3 className="text-base font-extrabold text-slate-800 dark:text-white tracking-tight">Personal Credentials & Details</h3>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-5">
               
               {/* Full Name input */}
               <div className="space-y-1.5">
@@ -195,7 +195,7 @@ export function RecruiterProfile() {
                   onChange={(e) => setName(e.target.value)}
                   error={errors.name}
                   disabled={saveLoading}
-                  className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs"
                 />
               </div>
 
@@ -204,15 +204,15 @@ export function RecruiterProfile() {
                 <Input
                   id="profile-email-input"
                   label={
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-1.5">
                       <span>Email Address</span>
-                      <span className="text-[9px] font-bold text-slate-400 bg-slate-100 border border-slate-200 px-1.5 py-0.2 rounded uppercase select-none">Read-Only</span>
+                      <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded uppercase select-none">Read-Only</span>
                     </span>
                   }
                   type="email"
                   value={user?.email || ''}
                   disabled={true}
-                  className="rounded-xl border-slate-200 bg-slate-50/70 font-semibold text-slate-400 cursor-not-allowed text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/50 font-semibold text-slate-400 dark:text-slate-500 cursor-not-allowed text-xs"
                 />
               </div>
 
@@ -226,19 +226,19 @@ export function RecruiterProfile() {
                   onChange={(e) => setPhone(e.target.value)}
                   error={errors.phone}
                   disabled={saveLoading}
-                  className="rounded-xl border-slate-200 focus:border-blue-500 font-semibold text-slate-700 text-xs"
+                  className="rounded-xl border-slate-200 dark:border-slate-800 focus:border-blue-500 font-semibold text-slate-700 dark:text-slate-200 text-xs"
                 />
               </div>
 
               {/* Save Controls */}
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end w-full sm:w-auto">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end w-full">
                 <Button
                   type="submit"
                   variant="primary"
                   size="md"
                   disabled={saveLoading || uploadLoading}
                   isLoading={saveLoading}
-                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-2.5 px-6 shadow-md shadow-blue-500/10 text-xs"
+                  className="w-full sm:w-auto rounded-xl font-bold flex items-center justify-center gap-1.5 py-3 px-6 shadow-md shadow-blue-500/10 text-xs"
                 >
                   <FileCheck className="w-4 h-4" />
                   <span>Save Changes</span>

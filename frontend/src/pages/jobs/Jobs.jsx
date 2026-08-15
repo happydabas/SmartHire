@@ -23,6 +23,7 @@ import {
 import { jobService } from '@/services/jobs/jobService';
 import { formatDate } from '@/utils/formatDate';
 import { formatSalary } from '@/utils/formatSalary';
+import PageHeader from '@/components/ui/PageHeader';
 import { formatJobType, formatWorkMode, formatExperienceLevel } from '@/utils/enumFormatters';
 
 // Reusable UI components
@@ -206,6 +207,7 @@ export function JobsPage() {
         const params = {
           page: currentPage,
           limit: pageSize,
+          sort: sortBy,
           employment_type: currentFilters.employment_type || undefined,
           work_mode: currentFilters.work_mode || undefined,
           experience_level: currentFilters.experience_level || undefined,
@@ -246,7 +248,7 @@ export function JobsPage() {
     }
     if (sortKey === 'salary_asc') {
       const salA = a.salary_min || a.salary_max || 0;
-      const salB = b.salary_max || b.salary_min || 0;
+      const salB = b.salary_min || b.salary_max || 0;
       return salA - salB;
     }
     if (sortKey === 'company_asc') {
@@ -314,7 +316,7 @@ export function JobsPage() {
   };
 
   const handleSortChange = (e) => {
-    updateURLParams({ sort: e.target.value });
+    updateURLParams({ sort: e.target.value, page: 1 });
   };
 
   // Status badges calculator
@@ -477,10 +479,10 @@ export function JobsPage() {
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
       {/* Header and alerts */}
       <div className="flex flex-col space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight">Explore Job Openings</h1>
-          <p className="text-slate-550 dark:text-slate-400 text-sm mt-1">Discover active, verified career opportunities tailored for your professional growth.</p>
-        </div>
+        <PageHeader
+          title="Explore Job Openings"
+          subtitle="Discover active, verified career opportunities tailored for your professional growth."
+        />
 
         {error && (
           <div className="flex items-center gap-3 p-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">

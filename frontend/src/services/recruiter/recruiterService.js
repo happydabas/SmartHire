@@ -215,7 +215,7 @@ export const recruiterService = {
       ? parseFloat((totalApplications / totalJobs).toFixed(1)) 
       : 0;
 
-    // 5. Aggregate stage counts
+    // 5. Aggregate stage counts from real application records
     const stageCounts = {
       applied: 0,
       screening: 0,
@@ -227,10 +227,52 @@ export const recruiterService = {
       const stage = (app.status || '').toLowerCase();
       if (stageCounts[stage] !== undefined) {
         stageCounts[stage]++;
+      } else if (stage.includes('screen')) {
+        stageCounts.screening++;
+      } else if (stage.includes('interview')) {
+        stageCounts.interview++;
+      } else if (stage.includes('select') || stage.includes('offer') || stage.includes('accept') || stage.includes('hire')) {
+        stageCounts.selected++;
+      } else if (stage.includes('reject')) {
+        stageCounts.rejected++;
       } else {
         stageCounts.applied++;
       }
     });
+
+    // Top active jobs list from real database
+    const topActiveJobs = jobs
+      .filter(j => (j.status || '').toLowerCase() === 'open')
+      .map(j => {
+        const appRes = applicationsResults.find(r => r.jobId === j.id);
+        return {
+          id: j.id,
+          title: j.title,
+          location: j.location || 'Remote',
+          work_mode: j.work_mode || 'Onsite',
+          applicationsCount: appRes?.totalCount || 0
+        };
+      })
+      .slice(0, 5);
+
+    // Compute real 14-day daily application trend
+    const daysMap = {};
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      daysMap[dateStr] = 0;
+    }
+    allApplications.forEach(app => {
+      const appDate = new Date(app.applied_at || app.created_at);
+      const dateStr = appDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (daysMap[dateStr] !== undefined) {
+        daysMap[dateStr]++;
+      }
+    });
+
+    const trendData = Object.entries(daysMap).map(([date, value]) => ({ date, value }));
 
     return {
       stats: {
@@ -240,13 +282,15 @@ export const recruiterService = {
         closedJobs,
         totalApplications,
       },
-      recentApplications,
+      topActiveJobs,
+      recentApplications: sortedApplications.slice(0, 5),
       analytics: {
         applicationsThisWeek,
         activePipelines,
         avgApplicationsPerJob,
       },
-      stageCounts
+      stageCounts,
+      trendData
     };
   },
 };

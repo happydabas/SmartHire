@@ -22,6 +22,7 @@ import { resumeService } from '@/services/resume/resumeService';
 import { applicationService } from '@/services/applications/applicationService';
 import { profileService } from '@/services/profile/profileService';
 import { formatDate } from '@/utils/formatDate';
+import PageHeader from '@/components/ui/PageHeader';
 
 // Reusable UI components
 import Card from '@/components/ui/Card';
@@ -253,25 +254,20 @@ export function Dashboard() {
   return (
     <div className="space-y-10 max-w-7xl mx-auto animate-fadeIn pb-12">
       {/* ── Welcome Header ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-slate-200/80 dark:border-slate-800/40 pb-6">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-            Good morning, {user?.name?.split(' ')[0] || 'Candidate'}!
-            <span className="animate-wave origin-bottom-right inline-block">👋</span>
-          </h1>
-          <p className="text-slate-500 text-sm dark:text-slate-300">
-            Explore opportunities and take the next step in your career.
-          </p>
-        </div>
-        <Button
-          variant="primary"
-          onClick={() => navigate('/jobs')}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/20 px-6 py-3.5 shrink-0 flex items-center gap-1.5 transition-transform hover:scale-[1.01]"
-        >
-          <span>Browse All Jobs</span>
-          <ArrowRight className="w-4 h-4 text-white" />
-        </Button>
-      </div>
+      <PageHeader
+        title={`Welcome back, ${user?.name?.split(' ')[0] || 'Candidate'}!`}
+        subtitle="Explore opportunities, track active applications, and manage your career profile."
+        actions={
+          <Button
+            variant="primary"
+            onClick={() => navigate('/jobs')}
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-2xl shadow-md shadow-blue-500/20 px-6 py-3 shrink-0 flex items-center gap-1.5 transition-transform hover:scale-[1.01]"
+          >
+            <span>Browse All Jobs</span>
+            <ArrowRight className="w-4 h-4 text-white" />
+          </Button>
+        }
+      />
 
       {/* ── Stats Grid ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

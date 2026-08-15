@@ -42,26 +42,38 @@ async def get_job_applications(
     structured_items = []
     for app_record in items:
         # User (Candidate) details
+        candidate_name = (app_record.user.profile.full_name if app_record.user and app_record.user.profile and app_record.user.profile.full_name else (app_record.user.name if app_record.user else "Candidate"))
         candidate_info = {
-            "id": app_record.user.id,
-            "name": app_record.user.name,
-            "email": app_record.user.email,
-            "profile": app_record.user.profile
+            "id": app_record.user.id if app_record.user else 0,
+            "name": candidate_name,
+            "full_name": candidate_name,
+            "email": app_record.user.email if app_record.user else "",
+            "profile": app_record.user.profile if app_record.user else None
         }
 
         # Resume details
         resume_info = None
-        if app_record.resume:
+        resume_obj = app_record.resume
+        if not resume_obj and app_record.user_id:
+            from app.repositories.resumes import ResumeRepository
+            resume_obj = await ResumeRepository().get_by_user_id(service.db, user_id=app_record.user_id)
+
+        if resume_obj:
             resume_info = {
-                "id": app_record.resume.id,
-                "resume_file_name": app_record.resume.file_name,
-                "resume_url_or_path": app_record.resume.file_path
+                "id": resume_obj.id,
+                "file_name": resume_obj.file_name or "resume.pdf",
+                "resume_file_name": resume_obj.file_name or "resume.pdf",
+                "file_path": f"/api/v1/applications/{app_record.id}/resume",
+                "resume_url_or_path": f"/api/v1/applications/{app_record.id}/resume"
             }
 
         # Job details
         job_info = {
-            "id": app_record.job.id,
-            "title": app_record.job.title
+            "id": app_record.job.id if app_record.job else 0,
+            "title": app_record.job.title if app_record.job else "Job Listing",
+            "job_type": app_record.job.job_type.value if app_record.job and hasattr(app_record.job.job_type, "value") else (app_record.job.job_type if app_record.job else "full-time"),
+            "work_mode": app_record.job.work_mode.value if app_record.job and hasattr(app_record.job.work_mode, "value") else (app_record.job.work_mode if app_record.job else "remote"),
+            "location": app_record.job.location if app_record.job else ""
         }
 
         structured_items.append({

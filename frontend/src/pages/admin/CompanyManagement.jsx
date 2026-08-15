@@ -7,6 +7,7 @@ import CompanyFilters from '@/components/admin/companies/CompanyFilters';
 import CompanyPagination from '@/components/admin/companies/CompanyPagination';
 import { AlertCircle, RotateCcw, Building, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 
 export function CompanyManagement() {
@@ -147,14 +148,10 @@ export function CompanyManagement() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Heading Title */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-          Company Management
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-          Moderate corporate employer status, verify businesses, and audit jobs.
-        </p>
-      </div>
+      <PageHeader
+        title="Company Management"
+        subtitle="Moderate corporate employer status, verify businesses, and audit jobs."
+      />
 
       {/* Main Container Card */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-4">

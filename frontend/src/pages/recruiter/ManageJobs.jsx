@@ -15,6 +15,7 @@ import {
   Inbox,
   Calendar,
   Building,
+  MapPin,
   RotateCcw,
   CheckCircle2,
   FileUp,
@@ -43,6 +44,7 @@ import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/common/EmptyState';
 import EmptyRecruiterJobs from '@/components/common/EmptyRecruiterJobs';
 import Toast from '@/components/ui/Toast';
+import PageHeader from '@/components/ui/PageHeader';
 import Card from '@/components/ui/Card';
 import ConfirmationDialog from '@/components/ui/ConfirmationDialog';
 import SkeletonTable from '@/components/common/SkeletonTable';
@@ -712,23 +714,10 @@ export function ManageJobs() {
       />
 
       {/* Header Area */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Manage Job Listings</h1>
-          <p className="text-slate-500 text-sm mt-1">Review active, draft, and closed jobs and inspect applicant rates.</p>
-        </div>
-        {isOwner && (
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => navigate(ROUTES.RECRUITER_CREATE_JOB || '/recruiter/jobs/create')}
-            className="rounded-xl shadow-lg flex items-center justify-center gap-2 font-bold shrink-0 self-start sm:self-auto"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Post New Job</span>
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title="Manage Job Listings"
+        subtitle="Review active, draft, and closed jobs and inspect applicant rates."
+      />
 
       {/* Error state */}
       {error && (
@@ -853,21 +842,153 @@ export function ManageJobs() {
               <EmptyRecruiterJobs variant="manage" />
             )
           ) : (
-            <div className="space-y-4">
-              <DataTable
-                columns={columns}
-                data={jobData.items}
-                rowKey="id"
-                renderMobileCard={renderMobileCard}
-                emptyState={
-                  <EmptyState
-                    title="No jobs"
-                    description="No job postings."
-                    icon={<Inbox className="w-8 h-8" />}
-                  />
-                }
-              />
-              
+            <div className="space-y-4 w-full">
+              <div className="flex flex-col gap-4 w-full">
+                {jobData.items.map((job) => {
+                  const status = (job.status || 'draft').toLowerCase();
+                  const actions = getAvailableActions(job);
+
+                  const getStatusBadge = (st) => {
+                    if (st === 'open' || st === 'active') {
+                      return (
+                        <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+                          Active
+                        </span>
+                      );
+                    }
+                    if (st === 'closed') {
+                      return (
+                        <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/40">
+                          Closed
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="px-3 py-0.5 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/40">
+                        Draft
+                      </span>
+                    );
+                  };
+
+                  return (
+                    <Card
+                      key={job.id}
+                      className="w-full p-5 sm:p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm hover:shadow-md transition-all space-y-4"
+                    >
+                      {/* Header Row */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800/60 pb-4">
+                        <div className="flex items-start gap-3.5 min-w-0">
+                          <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20 flex items-center justify-center shrink-0 font-extrabold text-base">
+                            <Briefcase className="w-5 h-5" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <h3
+                                onClick={() => navigate(`/jobs/${job.id}`)}
+                                className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight hover:text-blue-600 dark:hover:text-blue-400 cursor-pointer transition-colors"
+                              >
+                                {job.title}
+                              </h3>
+                              {getStatusBadge(status)}
+                              {job.department && (
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                  {job.department}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium flex items-center gap-2 flex-wrap">
+                              <span>Created {formatDate(job.created_at)}</span>
+                              {job.application_deadline && (
+                                <>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                    Deadline: {formatDate(job.application_deadline)}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Action Menu dropdown */}
+                        <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                          <ActionMenu actions={actions} />
+                        </div>
+                      </div>
+
+                      {/* Key details Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{job.location || 'Location Unspecified'}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <Briefcase className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{formatJobType(job.job_type)}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <Building className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{formatWorkMode(job.work_mode)}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+                          <UserCheck className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{job.experience_level || 'Entry'} Level</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom Footer Row */}
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/60">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <button
+                            onClick={() => navigate(`/recruiter/applicants?jobId=${job.id}`)}
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-colors border border-blue-100 dark:border-blue-500/20"
+                          >
+                            <Inbox className="w-4 h-4" />
+                            <span>{job.applications_count ?? 0} Candidate Applications</span>
+                          </button>
+
+                          {isOwner && (
+                            <button
+                              onClick={() => handleOpenAssignmentModal(job)}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-colors"
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                              <span>{job.assigned_recruiter_ids?.length || 0} Recruiters Assigned</span>
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => navigate(`/jobs/${job.id}`)}
+                            className="rounded-xl font-bold text-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5 mr-1" /> View Listing
+                          </Button>
+
+                          {(status === 'draft' || status === 'open') && (
+                            <Button
+                              variant="primary"
+                              size="sm"
+                              onClick={() => navigate(`/recruiter/jobs/${job.id}/edit`)}
+                              className="rounded-xl font-bold text-xs"
+                            >
+                              <Edit2 className="w-3.5 h-3.5 mr-1" /> Edit Job
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+
               <Pagination
                 currentPage={pageParam}
                 totalCount={jobData.total}

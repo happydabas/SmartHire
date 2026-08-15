@@ -8,6 +8,7 @@ export const Table = ({
   rowKey = 'id',
   className,
   emptyState,
+  onRowClick,
   ...props
 }) => {
   // Utility to resolve nested object values (e.g., 'candidate.name')
@@ -52,7 +53,16 @@ export const Table = ({
               return (
                 <tr
                   key={key}
-                  className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors duration-200"
+                  onClick={(e) => {
+                    if (e.target.closest('button, a, input, select, textarea, [role="button"]')) {
+                      return;
+                    }
+                    if (onRowClick) onRowClick(row, rowIndex);
+                  }}
+                  className={clsx(
+                    "hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors duration-200",
+                    onRowClick && "cursor-pointer"
+                  )}
                 >
                   {columns.map((col, colIndex) => {
                     const value = resolveValue(row, col.key);

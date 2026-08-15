@@ -13,23 +13,21 @@ export const extractErrorMessage = (error) => {
     return "Unable to connect to the server. Please check your internet connection and try again.";
   }
 
-  // A) Network Error - No HTTP response received (error.response is undefined/null)
+  // Network Error - No HTTP response received
   if (!error.response) {
-    return "Unable to connect to the server. Please check your internet connection and try again.";
+    return error.message || "Unable to connect to the server. Please check your internet connection and try again.";
   }
 
   const { status, data } = error.response;
 
-  // D) 500 errors
-  if (status >= 500) {
-    return "Something went wrong. Please try again later.";
-  }
-
-  // B) Backend Error / C) FastAPI validation errors - HTTP response exists
+  // Prioritize detailed error responses from backend data
   if (data) {
-    // 1. FastAPI validation errors: { "detail": [ { "msg": "..." } ] }
+    // 1. FastAPI validation errors array: { "detail": [ { "msg": "...", "loc": [...] } ] }
     if (data.detail && Array.isArray(data.detail)) {
-      return data.detail.map(err => err.msg || JSON.stringify(err)).join(', ');
+      return data.detail.map(err => {
+        const field = err.loc && Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : '';
+        return field ? `${field}: ${err.msg}` : (err.msg || JSON.stringify(err));
+      }).join('; ');
     }
 
     // 2. { "detail": "..." }
@@ -55,9 +53,6 @@ export const extractErrorMessage = (error) => {
       if (errObj.msg && typeof errObj.msg === 'string') {
         return errObj.msg;
       }
-      if (errObj.message && typeof errObj.message === 'string') {
-        return errObj.message;
-      }
     }
 
     // 4. { "message": "..." }
@@ -82,7 +77,10 @@ export const extractErrorMessage = (error) => {
     }
   }
 
-  // Fallback to standard error message if it is not generic
+  if (status >= 500) {
+    return "Server error occurred. Please try again later.";
+  }
+
   if (error.message && !error.message.includes('AxiosError') && !error.message.includes('status code')) {
     return error.message;
   }

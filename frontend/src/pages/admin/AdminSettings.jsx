@@ -10,6 +10,7 @@ import AuditLogPagination from '@/components/admin/settings/AuditLogPagination';
 import SettingsSkeleton from '@/components/admin/settings/SettingsSkeleton';
 import { AlertCircle, RotateCcw, Shield, Bell, Cpu, History, User } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 
 export function AdminSettings() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -109,14 +110,10 @@ export function AdminSettings() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Title */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-          Admin Settings
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-          Manage your system administrator profile, notification options, and audit logs.
-        </p>
-      </div>
+      <PageHeader
+        title="Admin Settings"
+        subtitle="Manage your system administrator profile, notification options, and audit logs."
+      />
 
       {error ? (
         <div className="flex flex-col items-center justify-center p-16 text-center bg-white border border-rose-100 rounded-3xl dark:bg-slate-900 dark:border-rose-950/20">

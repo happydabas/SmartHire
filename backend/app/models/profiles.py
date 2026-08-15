@@ -104,9 +104,9 @@ class JobSeekerProfile(Base, TimestampMixin):
     )
 
     profile_photo_url: Mapped[Optional[str]] = mapped_column(
-        sa.String(255),
+        sa.Text,
         nullable=True,
-        comment="Profile picture URL"
+        comment="Profile picture URL or Base64 string"
     )
 
     # Relationships

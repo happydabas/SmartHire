@@ -23,6 +23,7 @@ import Checkbox from '@/components/ui/Checkbox';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
+import PageHeader from '@/components/ui/PageHeader';
 
 export function ExperiencePage() {
   const [loading, setLoading] = useState(true);
@@ -244,21 +245,20 @@ export function ExperiencePage() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12">
       {/* Header and alerts */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Work Experience</h1>
-          <p className="text-slate-500 text-sm mt-1">Manage your employment history, career milestones, and professional roles.</p>
-        </div>
-
-        <Button
-          variant="primary"
-          size="md"
-          onClick={handleOpenAddForm}
-          className="rounded-2xl shadow-lg flex items-center gap-2 font-bold shrink-0 self-start md:self-auto"
-        >
-          <Plus className="w-4 h-4" /> Add Experience
-        </Button>
-      </div>
+      <PageHeader
+        title="Work Experience"
+        subtitle="Manage your employment history, career milestones, and professional roles."
+        actions={
+          <Button
+            variant="primary"
+            size="md"
+            onClick={handleOpenAddForm}
+            className="rounded-2xl shadow-lg flex items-center gap-2 font-bold shrink-0"
+          >
+            <Plus className="w-4 h-4" /> Add Experience
+          </Button>
+        }
+      />
 
       {error && (
         <div className="flex items-center gap-3 p-4 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-2xl animate-fadeIn">

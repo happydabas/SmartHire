@@ -7,6 +7,7 @@ import JobFilters from '@/components/admin/jobs/JobFilters';
 import JobPagination from '@/components/admin/jobs/JobPagination';
 import { AlertCircle, RotateCcw, Briefcase, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 
 export function JobModeration() {
@@ -137,14 +138,10 @@ export function JobModeration() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Title Header */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-          Job Moderation
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-          Moderate pending job postings, approve active listings, and close open vacancies.
-        </p>
-      </div>
+      <PageHeader
+        title="Job Moderation"
+        subtitle="Moderate pending job postings, approve active listings, and close open vacancies."
+      />
 
       {/* Main filter container card */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-4">

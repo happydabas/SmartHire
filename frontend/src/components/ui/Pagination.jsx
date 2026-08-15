@@ -1,7 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
-import Select from './Select';
 
 export const Pagination = ({
   currentPage = 1,
@@ -44,31 +43,31 @@ export const Pagination = ({
   return (
     <div
       className={twMerge(
-        'flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t border-slate-100 bg-white rounded-b-2xl',
+        'flex flex-col sm:flex-row items-center justify-between gap-4 py-4 px-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-b-2xl',
         className
       )}
       {...props}
     >
       {/* 1. Statistics Summary */}
-      <div className="text-xs font-semibold text-slate-500 order-2 sm:order-1">
-        Showing <span className="text-slate-800 font-bold">{start}</span>–
-        <span className="text-slate-800 font-bold">{end}</span> of{' '}
-        <span className="text-slate-800 font-bold">{totalCount}</span> items
+      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 order-2 sm:order-1">
+        Showing <span className="text-slate-800 dark:text-slate-200 font-bold">{start}</span>–
+        <span className="text-slate-800 dark:text-slate-200 font-bold">{end}</span> of{' '}
+        <span className="text-slate-800 dark:text-slate-200 font-bold">{totalCount}</span> items
       </div>
 
       {/* 2. Controls and Page size select */}
       <div className="flex items-center gap-4.5 order-1 sm:order-2 w-full sm:w-auto justify-between sm:justify-end">
         {/* Page size select wrapper */}
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 shrink-0 select-none">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400 shrink-0 select-none">
           <span>Show</span>
           <select
             value={pageSize}
             onChange={(e) => onPageSizeChange?.(Number(e.target.value))}
-            className="px-2 py-1 text-xs font-bold text-slate-700 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer"
+            className="px-2 py-1 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:border-blue-500 cursor-pointer"
           >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
+            <option value={10} className="bg-white dark:bg-[#15161e] text-slate-800 dark:text-slate-200">10</option>
+            <option value={20} className="bg-white dark:bg-[#15161e] text-slate-800 dark:text-slate-200">20</option>
+            <option value={50} className="bg-white dark:bg-[#15161e] text-slate-800 dark:text-slate-200">50</option>
           </select>
         </div>
 
@@ -79,7 +78,7 @@ export const Pagination = ({
             type="button"
             onClick={() => onPageChange?.(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+            className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -95,7 +94,7 @@ export const Pagination = ({
                   'w-8 h-8 rounded-lg text-xs font-bold transition-all border',
                   currentPage === pageNum
                     ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-600/10'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                    : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 )}
               >
                 {pageNum}
@@ -104,7 +103,7 @@ export const Pagination = ({
           </div>
 
           {/* Mobile Current indicator */}
-          <div className="sm:hidden text-xs font-bold text-slate-700 px-3 select-none">
+          <div className="sm:hidden text-xs font-bold text-slate-700 dark:text-slate-300 px-3 select-none">
             Page {currentPage} of {totalPages}
           </div>
 
@@ -113,7 +112,7 @@ export const Pagination = ({
             type="button"
             onClick={() => onPageChange?.(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="p-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-slate-500 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
+            className="p-2 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 disabled:opacity-40 disabled:hover:bg-transparent disabled:cursor-not-allowed transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

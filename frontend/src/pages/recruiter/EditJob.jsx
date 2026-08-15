@@ -5,16 +5,16 @@ import {
   Layers,
   Sparkles,
   ClipboardList,
-  ArrowLeft,
   GraduationCap,
   Building,
   RotateCcw,
   AlertCircle,
-  FileCheck
+  FileCheck,
+  Sliders,
+  ListTodo
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { jobService } from '@/services/jobs/jobService';
-import { skillsService } from '@/services/skills/skillsService';
 import { notificationService } from '@/services/notificationService';
 import { MASTER_SKILLS_CATALOG } from '@/pages/jobseeker/Skills';
 
@@ -28,31 +28,13 @@ import Spinner from '@/components/ui/Spinner';
 import Toast from '@/components/ui/Toast';
 import Card from '@/components/ui/Card';
 import SkeletonProfile from '@/components/common/SkeletonProfile';
+import SegmentedDateInput from '@/components/ui/SegmentedDateInput';
+import PipelineCustomizerModal from '@/components/ui/PipelineCustomizerModal';
+import JobPreviewCard from '@/components/ui/JobPreviewCard';
+import PageHeader from '@/components/ui/PageHeader';
 import { parseFormErrors, extractErrorMessage } from '@/utils/errorParser';
 
-// Predefined hiring pipeline templates (matching CreateJob presets)
-const PIPELINE_TEMPLATES = [
-  {
-    id: 'standard_tech',
-    name: 'Standard Technical Pipeline',
-    stages: ['Applied', 'Technical Screening', 'Coding Challenge', 'Technical Interview', 'HR Interview', 'Offer']
-  },
-  {
-    id: 'standard_commercial',
-    name: 'Standard Sales / Commercial Pipeline',
-    stages: ['Applied', 'Screening Call', 'Case Presentation', 'Final Interview', 'Offer']
-  },
-  {
-    id: 'fast_track',
-    name: 'Simple Fast-track Pipeline',
-    stages: ['Applied', 'Final Interview', 'Offer']
-  },
-  {
-    id: 'default',
-    name: 'Default Pipeline',
-    stages: ['Applied', 'Screening', 'Technical Interview', 'Hr Interview', 'Offer']
-  }
-];
+const DEFAULT_PIPELINE = ['Applied', 'Screening', 'Technical Interview', 'HR Interview', 'Offer'];
 
 export function EditJob() {
   const { id } = useParams();
@@ -72,6 +54,10 @@ export function EditJob() {
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
 
+  // Hiring pipeline state
+  const [pipelineStages, setPipelineStages] = useState(DEFAULT_PIPELINE);
+  const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
+
   // Form Fields
   const [formFields, setFormFields] = useState({
     title: '',
@@ -88,7 +74,6 @@ export function EditJob() {
     requirements: '',
     benefits: '',
     required_skills: [],
-    pipeline_template_id: 'default',
     status: 'draft'
   });
 
@@ -114,7 +99,6 @@ export function EditJob() {
     ].filter(i => i.index !== -1).sort((a, b) => a.index - b.index);
 
     if (indexes.length > 0) {
-      // Main description is text before the first section heading
       description = desc.substring(0, indexes[0].index).trim();
       
       for (let i = 0; i < indexes.length; i++) {
@@ -139,35 +123,19 @@ export function EditJob() {
     return { description, responsibilities, requirements, benefits };
   };
 
-  // Helper to match pipeline template by stage names
-  const getPipelineTemplateId = (pipeline) => {
-    if (!pipeline || !pipeline.stages || pipeline.stages.length === 0) return 'default';
-    const stageNames = pipeline.stages.map(s => s.stage_name);
-    
-    const matched = PIPELINE_TEMPLATES.find(p => 
-      p.stages.length === stageNames.length && 
-      p.stages.every((st, idx) => st.toLowerCase() === stageNames[idx].toLowerCase())
-    );
-    
-    return matched ? matched.id : 'default';
-  };
-
-  // 1. Fetch skills and job details on mount
+  // Fetch skills and job details on mount
   useEffect(() => {
     const initializeForm = async () => {
       try {
         setLoading(true);
         setGlobalError(null);
 
-        // Set master skills catalog
         setAvailableSkills(MASTER_SKILLS_CATALOG);
         setSkillsLoading(false);
 
-        // Fetch Job details
         const job = await jobService.getJobDetails(id);
         setOriginalStatus(job.status);
         
-        // Enforce ownership: only job creator or company owner can edit
         if (user.role === 'recruiter' && job.recruiter_id !== user.id) {
           throw new Error('Access denied: You are not authorized to edit this job posting.');
         }
@@ -177,16 +145,17 @@ export function EditJob() {
           ? new Date(job.application_deadline).toISOString().split('T')[0] 
           : '';
 
-        // Map skill names back to IDs in our catalog
         const selectedSkillIds = (job.skills || []).map(skill => {
-          const match = skillsCatalog.find(s => s.skill_name.toLowerCase() === skill.skill_name.toLowerCase());
+          const match = MASTER_SKILLS_CATALOG.find(s => s.skill_name.toLowerCase() === (skill.skill_name || '').toLowerCase());
           return match ? match.id : skill.id;
         });
 
-        // Resolve pipeline template
-        const pipelineId = getPipelineTemplateId(job.pipeline);
+        if (job.pipeline?.stages && job.pipeline.stages.length > 0) {
+          setPipelineStages(job.pipeline.stages.map(s => s.stage_name));
+        } else {
+          setPipelineStages(DEFAULT_PIPELINE);
+        }
 
-        // Try to guess department from title
         const getDepartmentGuess = (title) => {
           const t = title?.toLowerCase() || '';
           if (t.includes('engineer') || t.includes('dev') || t.includes('tech') || t.includes('data') || t.includes('software')) return 'Engineering';
@@ -213,7 +182,6 @@ export function EditJob() {
           requirements: parsedDesc.requirements,
           benefits: parsedDesc.benefits,
           required_skills: selectedSkillIds,
-          pipeline_template_id: pipelineId,
           status: job.status || 'draft'
         });
       } catch (err) {
@@ -295,21 +263,14 @@ export function EditJob() {
       setSubmitting(true);
       setGlobalError(null);
 
-      // Map selected skill IDs to skill_name strings
       const mappedSkills = formFields.required_skills.map(skillId => {
-        const found = availableSkills.find(s => s.id === skillId);
-        return found ? found.skill_name : skillId;
+        const found = availableSkills.find(s => s.id === skillId || s.id === Number(skillId) || s.skill_name === skillId);
+        return found ? found.skill_name : String(skillId);
       });
 
-      // Find the pipeline stages list
-      const selectedPipelineObj = PIPELINE_TEMPLATES.find(p => p.id === formFields.pipeline_template_id);
-      const pipelineStages = selectedPipelineObj ? selectedPipelineObj.stages : PIPELINE_TEMPLATES[3].stages;
-
-      // Clean salary numbers
       const salaryMinVal = formFields.salary_min ? parseFloat(formFields.salary_min) : null;
       const salaryMaxVal = formFields.salary_max ? parseFloat(formFields.salary_max) : null;
 
-      // Format description with sub-sections
       let fullDescription = formFields.description;
       if (formFields.responsibilities.trim()) {
         fullDescription += `\n\n### Responsibilities\n${formFields.responsibilities}`;
@@ -328,7 +289,7 @@ export function EditJob() {
         job_type: formFields.job_type,
         experience_level: formFields.experience_level,
         work_mode: formFields.work_mode,
-        status: updatedStatus, // 'draft' or 'open' or 'closed'
+        status: updatedStatus,
         salary_min: salaryMinVal,
         salary_max: salaryMaxVal,
         application_deadline: formFields.application_deadline ? new Date(formFields.application_deadline).toISOString() : null,
@@ -340,7 +301,6 @@ export function EditJob() {
       
       triggerToast('Job listing updated successfully!');
 
-      // Trigger notification if status changed
       if (originalStatus !== updatedStatus) {
         if (updatedStatus === 'open') {
           if (originalStatus === 'draft') {
@@ -394,11 +354,10 @@ export function EditJob() {
     );
   }
 
-  const selectedPipeline = PIPELINE_TEMPLATES.find(p => p.id === formFields.pipeline_template_id) || PIPELINE_TEMPLATES[3];
   const isDraftStatus = formFields.status?.toLowerCase() === 'draft';
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-12">
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
       {/* Toast alert popup */}
       {toastMessage && (
         <Toast
@@ -408,21 +367,19 @@ export function EditJob() {
         />
       )}
 
-      {/* Header section */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/recruiter/jobs')}
-          className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:border-slate-300 text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
-          title="Back to Job Listings"
-          disabled={submitting}
-        >
-          <ArrowLeft className="w-4.5 h-4.5" />
-        </button>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Edit Job Posting</h1>
-          <p className="text-slate-500 text-sm mt-1">Modify details, skills checklist, or publish this listing.</p>
-        </div>
-      </div>
+      {/* Custom Pipeline Modal */}
+      <PipelineCustomizerModal
+        isOpen={isPipelineModalOpen}
+        onClose={() => setIsPipelineModalOpen(false)}
+        initialStages={pipelineStages}
+        onSaveStages={(newStages) => setPipelineStages(newStages)}
+      />
+
+      <PageHeader
+        title="Edit Job Posting"
+        subtitle="Modify job parameters, required competencies, or update publishing status."
+        backUrl="/recruiter/jobs"
+      />
 
       {globalError && (
         <div className="flex items-center gap-3 p-4 text-sm font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-2xl animate-fadeIn">
@@ -431,16 +388,19 @@ export function EditJob() {
         </div>
       )}
 
-      {/* Form panel */}
-      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* LEFT COLUMN - Main configurations */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* 2-COLUMN GRID FORM PANEL */}
+      <form onSubmit={(e) => e.preventDefault()} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+
+        {/* LEFT COLUMN: Input Form Sections (A, B, C, D) */}
+        <div className="lg:col-span-2 space-y-8">
+
           {/* Card A: Basic Info */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Building className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">A. Basic Information</h2>
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-6 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                <Building className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">A. Basic Information</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -504,10 +464,10 @@ export function EditJob() {
                 disabled={submitting}
               />
 
-              <Input
+              {/* Segmented Auto-Advancing Application Deadline */}
+              <SegmentedDateInput
                 label="Application Deadline"
                 id="application_deadline"
-                type="date"
                 value={formFields.application_deadline}
                 onChange={handleInputChange}
                 disabled={submitting}
@@ -538,11 +498,13 @@ export function EditJob() {
             </div>
           </Card>
 
-          {/* Card B: Details descriptions */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-6 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <ClipboardList className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">B. Job Details</h2>
+          {/* Card B: Job Details */}
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-6 shadow-sm">
+            <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                <ClipboardList className="w-5 h-5" />
+              </div>
+              <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">B. Job Details</h2>
             </div>
 
             <div className="space-y-5">
@@ -553,7 +515,7 @@ export function EditJob() {
                 value={formFields.description}
                 onChange={handleInputChange}
                 error={fieldErrors.description}
-                placeholder="Describe the job position, company overview..."
+                placeholder="Describe the job position, company, overview details..."
                 disabled={submitting}
                 required
               />
@@ -589,73 +551,96 @@ export function EditJob() {
               />
             </div>
           </Card>
-        </div>
 
-        {/* RIGHT COLUMN - Skills, flow templates, actions */}
-        <div className="space-y-6">
-          {/* Card C: Required Skills */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">C. Required Skills</h2>
+          {/* Card C: REQUIRED SKILLS SECTION */}
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                  <GraduationCap className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  C. Required Skills & Competencies *
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900 px-3 py-1 rounded-full">
+                  {formFields.required_skills.length} Skills Selected
+                </span>
+              </div>
             </div>
 
             <MultiSelect
-              label="Select Master Skills *"
               id="required_skills"
               options={availableSkills}
               selectedValues={formFields.required_skills}
               onChange={handleMultiSelectChange}
               error={fieldErrors.required_skills}
-              placeholder="Search & add skills..."
+              placeholder="Search skills (e.g. React, Python, Docker)..."
               disabled={submitting || skillsLoading}
+              inline={true}
+              showCategoryFilters={false}
             />
             {skillsLoading && (
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
                 <Spinner size="sm" />
-                <span>Syncing skills catalog...</span>
+                <span>Syncing skills registry...</span>
               </div>
             )}
           </Card>
 
-          {/* Card D: Hiring Pipeline selection */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Layers className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">D. Hiring Pipeline</h2>
+          {/* Card D: Hiring Pipeline */}
+          <Card className="p-6 md:p-8 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl space-y-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-xs">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">D. Hiring Pipeline</h2>
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsPipelineModalOpen(true)}
+                className="rounded-xl font-bold flex items-center gap-2 border border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-slate-700 dark:text-slate-200 hover:text-blue-700 dark:hover:text-blue-400 transition-all"
+              >
+                <Sliders className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>Customize Hiring Pipeline</span>
+              </Button>
             </div>
 
-            <Select
-              label="Choose Recruitment Flow"
-              id="pipeline_template_id"
-              value={formFields.pipeline_template_id}
-              onChange={handleInputChange}
-              options={PIPELINE_TEMPLATES.map(p => ({ label: p.name, value: p.id }))}
-              disabled={submitting}
-            />
-
-            <div className="space-y-2 pt-2">
-              <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hiring Stages Sequence</label>
-              <div className="flex flex-col gap-1.5 bg-slate-50 border border-slate-100 rounded-xl p-3.5 max-h-48 overflow-y-auto">
-                {selectedPipeline.stages.map((stage, idx) => (
-                  <div key={idx} className="flex items-center gap-3 text-xs font-semibold text-slate-700">
-                    <span className="w-5 h-5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-extrabold">{idx + 1}</span>
-                    <span>{stage}</span>
-                  </div>
-                ))}
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4">
+              {pipelineStages.map((stage, idx) => (
+                <div key={idx} className="flex items-center gap-3 bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs">
+                  <span className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-900/40 border border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 flex items-center justify-center text-xs font-black shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="truncate">{stage}</span>
+                </div>
+              ))}
             </div>
           </Card>
+        </div>
 
-          {/* Card E: Actions submit buttons */}
-          <Card className="p-6 border border-slate-100 bg-white rounded-3xl space-y-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <FileCheck className="w-5 h-5 text-blue-600" />
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight">E. Save Changes</h2>
+        {/* RIGHT COLUMN: COMPLETELY FIXED IN VIEWPORT WITHOUT SCROLLING */}
+        <div className="lg:col-span-1 sticky top-28 self-start space-y-4">
+          
+          {/* Real-time Live Job Preview Card */}
+          <JobPreviewCard
+            formFields={formFields}
+            pipelineStages={pipelineStages}
+            availableSkills={availableSkills}
+          />
+
+          {/* Save Changes Action Card */}
+          <Card className="p-5 border border-slate-200/80 bg-white dark:bg-[#15161e] rounded-3xl space-y-3 shadow-lg">
+            <div className="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2.5">
+              <FileCheck className="w-4 h-4 text-blue-600" />
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-white tracking-tight">Save Changes</h3>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {/* If it's currently a Draft, offer the ability to publish it directly! */}
+            <div className="flex flex-col gap-2.5">
               {isDraftStatus ? (
                 <>
                   <Button
@@ -664,7 +649,7 @@ export function EditJob() {
                     onClick={() => handleUpdate('open')}
                     isLoading={submitting}
                     disabled={submitting}
-                    className="w-full rounded-xl py-3 font-bold flex items-center justify-center gap-2"
+                    className="w-full rounded-2xl py-3 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
                   >
                     <span>Publish Job Listing</span>
                   </Button>
@@ -674,20 +659,19 @@ export function EditJob() {
                     onClick={() => handleUpdate('draft')}
                     isLoading={submitting}
                     disabled={submitting}
-                    className="w-full rounded-xl py-3 font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50"
+                    className="w-full rounded-2xl py-3 font-bold flex items-center justify-center gap-2 border border-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
                   >
                     <span>Save Draft Changes</span>
                   </Button>
                 </>
               ) : (
-                // If it's already Active (open) or Closed, allow updating its content directly
                 <Button
                   variant="primary"
                   size="md"
                   onClick={() => handleUpdate(formFields.status)}
                   isLoading={submitting}
                   disabled={submitting}
-                  className="w-full rounded-xl py-3 font-bold flex items-center justify-center gap-2"
+                  className="w-full rounded-2xl py-3 font-bold flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20"
                 >
                   <span>Save Job Details</span>
                 </Button>
@@ -698,7 +682,7 @@ export function EditJob() {
                 size="md"
                 onClick={() => navigate('/recruiter/jobs')}
                 disabled={submitting}
-                className="w-full rounded-xl py-3 font-bold border border-transparent hover:bg-slate-100 text-slate-500"
+                className="w-full rounded-2xl py-3 font-bold border border-transparent hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
               >
                 <span>Cancel</span>
               </Button>

@@ -10,12 +10,12 @@ from app.models.users import User, UserRole
 
 # Centralized application status transition rules
 ALLOWED_TRANSITIONS = {
-    ApplicationStatus.APPLIED: {ApplicationStatus.SCREENING, ApplicationStatus.WITHDRAWN},
-    ApplicationStatus.SCREENING: {ApplicationStatus.INTERVIEW, ApplicationStatus.WITHDRAWN},
-    ApplicationStatus.INTERVIEW: {ApplicationStatus.SELECTED, ApplicationStatus.REJECTED},
-    ApplicationStatus.SELECTED: set(),
-    ApplicationStatus.REJECTED: set(),
-    ApplicationStatus.WITHDRAWN: set()
+    ApplicationStatus.APPLIED: {ApplicationStatus.SCREENING, ApplicationStatus.INTERVIEW, ApplicationStatus.SELECTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN},
+    ApplicationStatus.SCREENING: {ApplicationStatus.APPLIED, ApplicationStatus.INTERVIEW, ApplicationStatus.SELECTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN},
+    ApplicationStatus.INTERVIEW: {ApplicationStatus.APPLIED, ApplicationStatus.SCREENING, ApplicationStatus.SELECTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN},
+    ApplicationStatus.SELECTED: {ApplicationStatus.APPLIED, ApplicationStatus.SCREENING, ApplicationStatus.INTERVIEW, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN},
+    ApplicationStatus.REJECTED: {ApplicationStatus.APPLIED, ApplicationStatus.SCREENING, ApplicationStatus.INTERVIEW, ApplicationStatus.SELECTED, ApplicationStatus.WITHDRAWN},
+    ApplicationStatus.WITHDRAWN: {ApplicationStatus.APPLIED, ApplicationStatus.SCREENING, ApplicationStatus.INTERVIEW, ApplicationStatus.SELECTED, ApplicationStatus.REJECTED}
 }
 from app.schemas.applications import ApplicationCreate
 
@@ -116,12 +116,21 @@ class ApplicationService:
         # 9. Create application record
         from sqlalchemy.exc import IntegrityError
         try:
-            return await self.app_repo.create_application(
+            new_app = await self.app_repo.create_application(
                 self.db,
                 user_id=current_user.id,
                 job_id=obj_in.job_id,
                 resume_id=resume_id
             )
+            try:
+                from app.services.notification_service import notify_job_application
+                cand_name = (current_user.profile.full_name if getattr(current_user, "profile", None) and getattr(current_user.profile, "full_name", None) else (current_user.name or "Candidate"))
+                await notify_job_application(self.db, application=new_app, job=job, candidate_name=cand_name)
+            except Exception as notif_err:
+                import logging
+                logging.getLogger(__name__).warning("Failed to dispatch job application notification: %s", notif_err)
+
+            return new_app
         except IntegrityError:
             await self.db.rollback()
             raise HTTPException(
@@ -328,6 +337,15 @@ class ApplicationService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Application not found."
             )
+        try:
+            from app.services.notification_service import notify_status_change
+            cand_user = updated_app.user
+            cand_name = (cand_user.profile.full_name if cand_user and getattr(cand_user, "profile", None) and getattr(cand_user.profile, "full_name", None) else (cand_user.name if cand_user else "Candidate"))
+            await notify_status_change(self.db, application=updated_app, job=updated_app.job, new_status_or_stage=new_status.value, candidate_name=cand_name)
+        except Exception as notif_err:
+            import logging
+            logging.getLogger(__name__).warning("Failed to dispatch status change notification: %s", notif_err)
+
         return updated_app
 
     async def get_job_applications(

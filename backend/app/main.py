@@ -127,8 +127,8 @@ async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
             "success": False,
             "error": {
                 "code": status.HTTP_503_SERVICE_UNAVAILABLE,
-                "message": "Database transaction failure. Connection temporarily unavailable.",
-                "details": None
+                "message": f"Database transaction failure: {str(exc)}",
+                "details": str(exc)
             }
         }
     )

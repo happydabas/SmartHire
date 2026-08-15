@@ -40,6 +40,7 @@ async def list_open_jobs(
     min_salary: Optional[Decimal] = None,
     max_salary: Optional[Decimal] = None,
     skills: Optional[str] = None,
+    sort: Optional[str] = Query("latest", description="Sort order parameter (latest, oldest, salary_desc, salary_asc, company_asc, company_desc, title_asc, title_desc)"),
     current_user: User = Depends(get_current_active_user),
     job_service: JobService = Depends(get_job_service)
 ) -> JobPaginatedResponse:
@@ -56,7 +57,8 @@ async def list_open_jobs(
         experience_level=experience_level,
         min_salary=min_salary,
         max_salary=max_salary,
-        skills=skills
+        skills=skills,
+        sort=sort
     )
 
 @router.get(
@@ -104,7 +106,7 @@ async def list_drafts(
     response_model=JobResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Post a new job listing",
-    description="Accessible only by authenticated Company Owners."
+    description="Accessible by authenticated Recruiters and Company Owners."
 )
 async def create_job(
     payload: JobCreate,
@@ -121,20 +123,22 @@ async def create_job(
             detail="You must create or belong to a company before creating job postings."
         )
 
-    is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
-    if not is_owner:
-        company = await job_service.company_repo.get_by_id(job_service.db, company_id=company_id)
-        if not company or company.owner_id != current_user.id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only Company Owners are authorized to create job postings."
-            )
+    is_authorized = bool(
+        current_user.is_owner or 
+        current_user.role in [UserRole.COMPANY_OWNER, UserRole.RECRUITER]
+    )
+    if not is_authorized:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only authorized Recruiters and Company Owners can create job postings."
+        )
         
     created_job = await job_service.create_job(
         obj_in=payload,
         current_user=current_user
     )
     return created_job
+
 
 @router.get(
     "/{job_id}",

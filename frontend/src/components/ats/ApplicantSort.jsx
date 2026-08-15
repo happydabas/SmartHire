@@ -18,7 +18,7 @@ export const ApplicantSort = ({ value = 'latest', onSortChange, disabled = false
       onChange={onSortChange}
       options={options}
       disabled={disabled}
-      className="text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl"
+      className="text-xs font-semibold text-slate-700 dark:text-white bg-white dark:bg-[#15161e] border border-slate-200 dark:border-slate-800 rounded-xl"
     />
   );
 };

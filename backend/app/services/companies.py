@@ -91,6 +91,9 @@ class CompanyService:
                 detail="You do not have permission to modify this company's profile."
             )
             
+        if hasattr(obj_in, "logo") and obj_in.logo and not obj_in.logo_url:
+            obj_in.logo_url = obj_in.logo
+
         return await self.company_repo.update(
             self.db, 
             db_obj=company, 

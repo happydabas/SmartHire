@@ -19,6 +19,7 @@ export const ROUTES = {
   RECRUITER_PROFILE: '/recruiter/profile',
   RECRUITER_COMPANY_SETTINGS: '/recruiter/company/settings',
   RECRUITER_INSIGHTS: '/recruiter/insights',
+  RECRUITER_NOTIFICATIONS: '/recruiter/notifications',
   COMPANY: '/company',
   COMPANY_SETTINGS: '/company/settings',
   ADMIN: '/admin/dashboard',

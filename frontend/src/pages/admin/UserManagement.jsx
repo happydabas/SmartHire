@@ -7,6 +7,7 @@ import UserFilters from '@/components/admin/users/UserFilters';
 import UserPagination from '@/components/admin/users/UserPagination';
 import { AlertCircle, RotateCcw, UserCheck, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import PageHeader from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 
 export function UserManagement() {
@@ -115,14 +116,10 @@ export function UserManagement() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Title block */}
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight dark:text-white">
-          User Management
-        </h1>
-        <p className="text-sm font-semibold text-slate-500 mt-2 dark:text-slate-400">
-          Moderate, activate, and review job seeker and recruiter credentials.
-        </p>
-      </div>
+      <PageHeader
+        title="User Management"
+        subtitle="Moderate, activate, and review job seeker and recruiter credentials."
+      />
 
       {/* Action Controls & Filtering Header Card */}
       <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800 space-y-4">

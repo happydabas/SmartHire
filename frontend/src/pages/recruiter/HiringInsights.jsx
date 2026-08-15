@@ -8,6 +8,7 @@ import AIInsightLoader from '@/components/ai/AIInsightLoader';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { ShieldAlert, RefreshCw, BarChart3, TrendingUp, AlertCircle } from 'lucide-react';
+import PageHeader from '@/components/ui/PageHeader';
 import { toast } from 'sonner';
 
 export function HiringInsights() {
@@ -90,27 +91,22 @@ export function HiringInsights() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 animate-fadeIn">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight dark:text-white flex items-center gap-2.5">
-            <TrendingUp className="w-8 h-8 text-indigo-650 animate-pulse" />
-            <span>AI Hiring Insights & Market Demand</span>
-          </h1>
-          <p className="text-slate-550 text-sm mt-1 dark:text-slate-400">
-            Recruiter diagnostics comparing candidate pool skills, active application volumes, and job specifications.
-          </p>
-        </div>
-
-        <Button
-          variant="primary"
-          onClick={handleRefresh}
-          disabled={loading}
-          className="rounded-xl font-black text-xs px-5 py-3 shadow-lg shadow-indigo-500/20 shrink-0 flex items-center gap-1.5"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh Insights</span>
-        </Button>
-      </div>
+      <PageHeader
+        title="AI Hiring Insights & Market Demand"
+        subtitle="Recruiter diagnostics comparing candidate pool skills, active application volumes, and job specifications."
+        icon={TrendingUp}
+        actions={
+          <Button
+            variant="primary"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="rounded-xl font-black text-xs px-5 py-3 shadow-lg shadow-indigo-500/20 shrink-0 flex items-center gap-1.5"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>Generate Fresh Diagnostic</span>
+          </Button>
+        }
+      />
 
       {error && (
         <div className="flex items-start gap-3 p-4 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-100 rounded-2xl dark:bg-rose-955/10 dark:border-rose-955/20 dark:text-rose-455">
