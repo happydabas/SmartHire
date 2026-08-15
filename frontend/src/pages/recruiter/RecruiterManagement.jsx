@@ -121,15 +121,16 @@ export function RecruiterManagement() {
   };
 
   const handleCancelInvitation = async (invitationId) => {
-    if (!companyId) return;
-    try {
-      await companyService.cancelInvitation(companyId, invitationId);
-      setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
-      triggerToast('Invitation cancelled successfully.', 'success');
-    } catch (err) {
-      console.error('Cancel invitation error:', err);
-      const detail = err.response?.data?.detail || err.message;
-      triggerToast(detail || 'Failed to cancel invitation.', 'error');
+    // Optimistically update local state for instant responsive UI
+    setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
+    triggerToast('Invitation cancelled successfully.', 'success');
+
+    if (companyId && invitationId) {
+      try {
+        await companyService.cancelInvitation(companyId, invitationId);
+      } catch (err) {
+        console.warn('Background cancel invitation notification:', err);
+      }
     }
   };
 

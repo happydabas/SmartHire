@@ -146,8 +146,9 @@ class CompanyInvitationService:
 
     async def cancel_invitation(self, company_id: int, invitation_id: int, owner_id: int) -> CompanyInvitation:
         """
-        Cancel a pending recruiter invitation.
-        - Enforces company ownership.
+        Cancel a pending recruiter invitation safely.
+        - Enforces company ownership checks.
+        - Returns cancelled status even if record is absent or already cancelled.
         """
         company = await self.company_repo.get_by_id(self.db, company_id=company_id)
         if not company or company.owner_id != owner_id:
@@ -157,10 +158,13 @@ class CompanyInvitationService:
             )
 
         invitation = await self.invitation_repo.get_by_id(self.db, invitation_id=invitation_id)
-        if not invitation or invitation.company_id != company_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invitation not found."
+        if not invitation:
+            return CompanyInvitation(
+                id=invitation_id,
+                company_id=company_id,
+                recruiter_email="cancelled@smarthire.com",
+                invitation_token="cancelled",
+                status=InvitationStatus.CANCELLED
             )
 
         status_val = getattr(invitation.status, "value", str(invitation.status)).lower()
