@@ -93,7 +93,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: str = Field(default="", validation_alias=AliasChoices("SMTP_USERNAME", "SMTP_USER"))
     SMTP_PASSWORD: str = ""
     EMAIL_FROM: str = Field(default="no-reply@smarthire.com", validation_alias=AliasChoices("EMAIL_FROM", "EMAILS_FROM_EMAIL"))
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "https://smarthire-jobs.netlify.app"
 
     @property
     def SMTP_USER(self) -> str:
