@@ -11,9 +11,14 @@ export const companyService = {
   // 2. Fetch company profile details
   getCompany: async (companyId) => {
     if (!companyId) {
-      throw new Error('No company profile associated with this account');
+      return companyService.getMyCompany();
     }
     const response = await api.get(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}`);
+    return response.data;
+  },
+
+  getMyCompany: async () => {
+    const response = await api.get(`${API_ENDPOINTS.COMPANY.BASE}/me`);
     return response.data;
   },
 

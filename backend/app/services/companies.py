@@ -79,6 +79,22 @@ class CompanyService:
             )
         return company
 
+    async def get_company_by_user(self, current_user: User) -> Company:
+        """
+        Retrieve company associated with the given user (either via company_id or owner_id).
+        """
+        if current_user.company_id:
+            company = await self.company_repo.get_by_id(self.db, company_id=current_user.company_id)
+            if company:
+                return company
+        company = await self.company_repo.get_by_owner_id(self.db, owner_id=current_user.id)
+        if not company:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No company profile associated with your account."
+            )
+        return company
+
     async def update_company(self, company_id: int, obj_in: CompanyUpdate, user_id: int) -> Company:
         """
         Modify details of an existing company.

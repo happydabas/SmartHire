@@ -27,6 +27,14 @@ class CompanyRepository:
         result = await db.execute(stmt)
         return result.scalars().first()
 
+    async def get_by_owner_id(self, db: AsyncSession, owner_id: int) -> Optional[Company]:
+        """
+        Query a company profile by its owner's user ID.
+        """
+        stmt = select(Company).where(Company.owner_id == owner_id)
+        result = await db.execute(stmt)
+        return result.scalars().first()
+
     async def create(
         self, 
         db: AsyncSession, 

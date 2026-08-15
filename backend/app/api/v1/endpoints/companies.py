@@ -56,6 +56,22 @@ async def create_company(
     return created_company
 
 @router.get(
+    "/me",
+    response_model=CompanyResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get caller's company profile",
+    description="Returns the company associated with the authenticated user."
+)
+async def get_my_company(
+    current_user: User = Depends(get_current_active_user),
+    company_service: CompanyService = Depends(get_company_service)
+) -> CompanyResponse:
+    """
+    Retrieve company profile for current logged-in owner/recruiter user.
+    """
+    return await company_service.get_company_by_user(current_user=current_user)
+
+@router.get(
     "/{company_id}",
     response_model=CompanyResponse,
     status_code=status.HTTP_200_OK,

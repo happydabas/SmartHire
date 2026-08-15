@@ -16,7 +16,7 @@ import { formatDate } from '@/utils/formatDate';
 
 export function RecruiterManagement() {
   const { user } = useAuth();
-  const companyId = user?.company_id;
+  const [resolvedCompanyId, setResolvedCompanyId] = useState(user?.company_id || null);
 
   const [loading, setLoading] = useState(true);
   const [recruiters, setRecruiters] = useState([]);
@@ -37,8 +37,33 @@ export function RecruiterManagement() {
     setToastType(type);
   };
 
+  useEffect(() => {
+    let active = true;
+    const initCompanyId = async () => {
+      if (!user?.company_id) {
+        try {
+          const comp = await companyService.getMyCompany();
+          if (active && comp?.id) {
+            setResolvedCompanyId(comp.id);
+          }
+        } catch (e) {
+          console.warn("Failed to fetch my company:", e);
+        }
+      } else {
+        setResolvedCompanyId(user.company_id);
+      }
+    };
+    initCompanyId();
+    return () => { active = false; };
+  }, [user?.company_id]);
+
+  const companyId = resolvedCompanyId || user?.company_id;
+
   const fetchData = async () => {
-    if (!companyId) return;
+    if (!companyId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [recs, invs] = await Promise.all([
@@ -72,9 +97,15 @@ export function RecruiterManagement() {
       return;
     }
 
+    if (!companyId) {
+      setInviteError('No active company profile found. Please set up your company profile first.');
+      return;
+    }
+
     try {
       setInviteLoading(true);
-      setInviteError('');
+      setInviteError(null);
+      
       const newInv = await companyService.sendInvitation(companyId, inviteEmail.trim());
       setInvitations(prev => [newInv, ...prev]);
       setInviteEmail('');
@@ -90,6 +121,7 @@ export function RecruiterManagement() {
   };
 
   const handleCancelInvitation = async (invitationId) => {
+    if (!companyId) return;
     try {
       await companyService.cancelInvitation(companyId, invitationId);
       setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
