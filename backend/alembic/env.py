@@ -31,7 +31,13 @@ def get_url() -> str:
     Dynamically loads the active DATABASE_URL connection string.
     Reads from environment variables, fallback is Settings values loaded from .env.
     """
-    return os.getenv("DATABASE_URL", settings.DATABASE_URL)
+    url = os.getenv("DATABASE_URL", settings.DATABASE_URL)
+    if url and isinstance(url, str):
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
 
 
 def run_migrations_offline() -> None:
