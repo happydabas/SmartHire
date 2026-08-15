@@ -39,7 +39,13 @@ class EmailService:
 
     @property
     def frontend_url(self) -> str:
-        return settings.FRONTEND_URL.rstrip('/')
+        import os
+        env_url = os.getenv("FRONTEND_URL", "").strip()
+        if env_url and not ("localhost" in env_url or "127.0.0.1" in env_url):
+            return env_url.rstrip('/')
+        if settings.FRONTEND_URL and not ("localhost" in settings.FRONTEND_URL or "127.0.0.1" in settings.FRONTEND_URL):
+            return settings.FRONTEND_URL.rstrip('/')
+        return "https://smarthire-jobs.netlify.app"
 
     def _send_sync(self, msg: EmailMessage) -> None:
         """Internal synchronous helper executed in a separate thread."""
