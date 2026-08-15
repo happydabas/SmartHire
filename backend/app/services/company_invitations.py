@@ -185,7 +185,7 @@ class CompanyInvitationService:
         if not invitation:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Invitation token is invalid."
+                detail="This invitation link is invalid or expired. Please click 'Copy Link' on your active invitation in Recruiter Management to open the latest link."
             )
 
         expires_at = invitation.expires_at
