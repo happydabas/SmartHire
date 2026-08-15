@@ -37,6 +37,22 @@ class CompanyInvitationRepository:
         result = await db.execute(stmt)
         return result.scalars().first()
 
+    async def get_latest_by_email_and_company(
+        self, 
+        db: AsyncSession, 
+        email: str, 
+        company_id: int
+    ) -> Optional[CompanyInvitation]:
+        """
+        Retrieve the latest invitation record matching recruiter email and company ID.
+        """
+        stmt = select(CompanyInvitation).where(
+            CompanyInvitation.recruiter_email == email,
+            CompanyInvitation.company_id == company_id
+        ).order_by(CompanyInvitation.created_at.desc())
+        result = await db.execute(stmt)
+        return result.scalars().first()
+
     async def create(
         self,
         db: AsyncSession,

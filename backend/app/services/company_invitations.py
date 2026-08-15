@@ -70,8 +70,8 @@ class CompanyInvitationService:
                 detail="This recruiter is already a member of your company."
             )
 
-        # 4. If an existing invitation is present for this email and company, refresh its token instead of failing
-        existing_invitation = await self.invitation_repo.get_pending_by_email_and_company(
+        # 4. If an existing invitation is present for this email and company (pending/cancelled/expired), refresh its token back to PENDING
+        existing_invitation = await self.invitation_repo.get_latest_by_email_and_company(
             self.db, 
             email=recruiter_email, 
             company_id=company_id

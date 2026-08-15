@@ -107,9 +107,9 @@ export function RecruiterManagement() {
       setInviteError(null);
       
       const newInv = await companyService.sendInvitation(companyId, inviteEmail.trim());
-      setInvitations(prev => [newInv, ...prev]);
       setInviteEmail('');
-      triggerToast('Recruiter invitation generated! Click "Copy Link" to share the invitation link directly.', 'success');
+      await fetchData();
+      triggerToast('Recruiter invitation generated! Click "Copy Link" on your active invitation to share the link.', 'success');
     } catch (err) {
       console.error('Send invitation error:', err);
       const detail = err.response?.data?.detail || err.message;
