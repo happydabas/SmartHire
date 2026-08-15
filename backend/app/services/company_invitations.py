@@ -101,7 +101,7 @@ class CompanyInvitationService:
         owner = await self.user_repo.get_by_id(self.db, user_id=owner_id)
         owner_name = owner.name if owner else None
 
-        # 6. Send invitation email via SMTP (best-effort, non-blocking for invitation creation).
+        # 6. Send invitation email via SMTP
         try:
             await self.email_service.send_recruiter_invitation_email(
                 to_email=recruiter_email,
@@ -112,8 +112,12 @@ class CompanyInvitationService:
             )
         except Exception as exc:
             import logging
-            logging.getLogger(__name__).warning(
-                "SMTP email dispatch failed for %s. Invitation token created successfully: %s", recruiter_email, exc
+            logging.getLogger(__name__).error(
+                "SMTP email dispatch failed for %s: %s", recruiter_email, exc
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to send email to {recruiter_email}: {str(exc)}"
             )
 
         try:

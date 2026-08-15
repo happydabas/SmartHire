@@ -74,8 +74,8 @@ class EmailService:
         Handles connection and authentication errors safely without exposing credentials.
         """
         if not self.username or not self.password:
-            logger.warning("SMTP_USERNAME or SMTP_PASSWORD not configured in settings. Skipping live email dispatch to %s.", to_email)
-            return
+            logger.error("SMTP_USERNAME or SMTP_PASSWORD not configured in settings. Cannot send live email to %s.", to_email)
+            raise ValueError("SMTP_USERNAME and SMTP_PASSWORD environment variables are not configured on the backend server.")
 
         msg = EmailMessage()
         msg['Subject'] = subject
