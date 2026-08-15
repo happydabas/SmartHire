@@ -99,8 +99,7 @@ class CompanyInvitationService:
         owner = await self.user_repo.get_by_id(self.db, user_id=owner_id)
         owner_name = owner.name if owner else None
 
-        # 8. Send invitation email via SMTP.
-        # If email delivery fails, roll back invitation record and raise HTTP 500 error.
+        # 8. Send invitation email via SMTP (best-effort, non-blocking for invitation creation).
         try:
             await self.email_service.send_recruiter_invitation_email(
                 to_email=recruiter_email,
@@ -110,12 +109,9 @@ class CompanyInvitationService:
                 expires_in_days=7
             )
         except Exception as exc:
-            # Roll back invitation record so database does not stay in half-created state
-            await self.db.delete(invitation)
-            await self.db.commit()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to send recruiter invitation email via SMTP: {str(exc)}"
+            import logging
+            logging.getLogger(__name__).warning(
+                "SMTP email dispatch failed for %s. Invitation token created successfully: %s", recruiter_email, exc
             )
 
         try:
@@ -166,10 +162,11 @@ class CompanyInvitationService:
                 detail="Invitation not found."
             )
 
-        if invitation.status != InvitationStatus.PENDING:
+        status_val = getattr(invitation.status, "value", str(invitation.status)).lower()
+        if status_val not in ["pending", "expired"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot cancel invitation with status '{invitation.status.value}'."
+                detail=f"Cannot cancel invitation with status '{status_val}'."
             )
 
         return await self.invitation_repo.update_status(

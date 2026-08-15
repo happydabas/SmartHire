@@ -78,10 +78,10 @@ export function RecruiterManagement() {
       const newInv = await companyService.sendInvitation(companyId, inviteEmail.trim());
       setInvitations(prev => [newInv, ...prev]);
       setInviteEmail('');
-      triggerToast('Invitation sent successfully!', 'success');
+      triggerToast('Recruiter invitation generated! Click "Copy Link" to share the invitation link directly.', 'success');
     } catch (err) {
-      console.error(err);
-      const detail = err.response?.data?.error?.message || err.response?.data?.detail || err.message;
+      console.error('Send invitation error:', err);
+      const detail = err.response?.data?.detail || err.message;
       setInviteError(detail);
       triggerToast(detail || 'Failed to send invitation.', 'error');
     } finally {
@@ -95,8 +95,9 @@ export function RecruiterManagement() {
       setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
       triggerToast('Invitation cancelled successfully.', 'success');
     } catch (err) {
-      console.error(err);
-      triggerToast('Failed to cancel invitation.', 'error');
+      console.error('Cancel invitation error:', err);
+      const detail = err.response?.data?.detail || err.message;
+      triggerToast(detail || 'Failed to cancel invitation.', 'error');
     }
   };
 
