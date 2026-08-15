@@ -84,6 +84,8 @@ export function RecruiterManagement() {
     fetchData();
   }, [companyId]);
 
+  const [lastCreatedInv, setLastCreatedInv] = useState(null);
+
   const handleSendInvitation = async (e) => {
     e.preventDefault();
     if (!inviteEmail.trim()) {
@@ -107,9 +109,10 @@ export function RecruiterManagement() {
       setInviteError(null);
       
       const newInv = await companyService.sendInvitation(companyId, inviteEmail.trim());
+      setLastCreatedInv(newInv);
       setInviteEmail('');
       await fetchData();
-      triggerToast('Recruiter invitation generated! Click "Copy Link" on your active invitation to share the link.', 'success');
+      triggerToast('Recruiter invitation generated! Click "Copy Link" to share the invitation link directly.', 'success');
     } catch (err) {
       console.error('Send invitation error:', err);
       const detail = err.response?.data?.detail || err.message;
@@ -162,12 +165,12 @@ export function RecruiterManagement() {
 
   if (!isOwner) {
     return (
-      <div className="max-w-md mx-auto py-12 px-4 text-center space-y-4 bg-white dark:bg-[#0d1017] border border-slate-100 dark:border-slate-800 rounded-3xl p-6 shadow-lg animate-in fade-in duration-200">
-        <div className="mx-auto w-12 h-12 bg-rose-50 dark:bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center">
-          <ShieldAlert className="w-6 h-6" />
+      <div className="max-w-4xl mx-auto py-12 px-4 text-center space-y-4">
+        <div className="p-4 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full inline-flex border border-amber-200 dark:border-amber-900/50">
+          <ShieldAlert className="w-8 h-8" />
         </div>
-        <h3 className="text-lg font-bold text-slate-800 dark:text-white tracking-tight">Access Restricted</h3>
-        <p className="text-sm text-slate-500 leading-relaxed">
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Company Owner Access Required</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
           Only the Company Owner is authorized to manage recruiters and invitations.
         </p>
       </div>
@@ -176,14 +179,13 @@ export function RecruiterManagement() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
+      <div className="flex items-center justify-center py-20">
         <Spinner size="lg" />
       </div>
     );
   }
 
   const pendingInvs = invitations.filter(i => i.status === 'pending');
-  const pastInvs = invitations.filter(i => i.status !== 'pending');
 
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-12 animate-fadeIn">
@@ -253,6 +255,41 @@ export function RecruiterManagement() {
                 <span>Send Invitation</span>
               </Button>
             </form>
+
+            {lastCreatedInv && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl space-y-2 animate-fadeIn">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Invitation Link Ready</span>
+                  <button 
+                    onClick={() => setLastCreatedInv(null)}
+                    className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+                <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-300 truncate">
+                  Target: {lastCreatedInv.recruiter_email}
+                </p>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => handleCopyLink(lastCreatedInv.invitation_token)}
+                  className="w-full rounded-xl py-1.5 text-xs font-bold bg-white dark:bg-slate-900 border border-emerald-200 text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  {copiedToken === lastCreatedInv.invitation_token ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Invitation Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Copy Invitation Link</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </Card>
         </div>
 
