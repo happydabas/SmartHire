@@ -91,7 +91,7 @@ class Settings(BaseSettings):
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
     SMTP_USERNAME: str = Field(default="", validation_alias=AliasChoices("SMTP_USERNAME", "SMTP_USER"))
-    SMTP_PASSWORD: str = ""
+    SMTP_PASSWORD: str = Field(default="", validation_alias=AliasChoices("SMTP_PASSWORD", "SMTP_PASS"))
     EMAIL_FROM: str = Field(default="no-reply@smarthire.com", validation_alias=AliasChoices("EMAIL_FROM", "EMAILS_FROM_EMAIL"))
     FRONTEND_URL: str = "https://smarthire-jobs.netlify.app"
 
