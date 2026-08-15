@@ -152,10 +152,10 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
             </>
           )}
 
-          {/* Recruiter Navigation Links */}
-          {user.role === ROLES.RECRUITER && (
+          {/* Recruiter & Company Owner Navigation Links */}
+          {(user.role === ROLES.RECRUITER || user.role === ROLES.COMPANY_OWNER || user.role === 'company_owner' || user.is_owner) && (
             <>
-              <NavLink to="/recruiter/dashboard" end onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Dashboard" : undefined}>
+              <NavLink to="/recruiter" end onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Dashboard" : undefined}>
                 <LayoutDashboard className="w-4.5 h-4.5 shrink-0" />
                 {!collapsedMode && <span>Dashboard</span>}
               </NavLink>
@@ -168,6 +168,11 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
               <NavLink to="/recruiter/applicants" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Applicants" : undefined}>
                 <User className="w-4.5 h-4.5 shrink-0" />
                 {!collapsedMode && <span>Applicants</span>}
+              </NavLink>
+
+              <NavLink to="/recruiter/team" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Recruiters" : undefined}>
+                <User className="w-4.5 h-4.5 shrink-0" />
+                {!collapsedMode && <span>Recruiters</span>}
               </NavLink>
 
               <NavLink to="/notifications" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Notifications" : undefined}>
@@ -183,10 +188,15 @@ export function Sidebar({ isCollapsed, setIsCollapsed, onLinkClick, isMobile = f
                   )}
                 </div>
               </NavLink>
+            </>
+          )}
 
-              <NavLink to="/recruiter/insights" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Hiring Insights" : undefined}>
-                <TrendingUp className="w-4.5 h-4.5 shrink-0 text-indigo-500" />
-                {!collapsedMode && <span>Hiring Insights</span>}
+          {/* Admin Navigation Links */}
+          {user.role === ROLES.ADMIN && (
+            <>
+              <NavLink to="/admin/dashboard" onClick={handleLinkClick} className={linkClass} title={collapsedMode ? "Admin Dashboard" : undefined}>
+                <LayoutDashboard className="w-4.5 h-4.5 shrink-0" />
+                {!collapsedMode && <span>Dashboard</span>}
               </NavLink>
             </>
           )}

@@ -91,9 +91,11 @@ function Login() {
         setIsLoading(false);
         const userRole = authData?.user?.role;
         let defaultRedirect = '/dashboard';
-        if (userRole === 'recruiter') defaultRedirect = '/recruiter';
-        else if (userRole === 'admin') defaultRedirect = '/admin/dashboard';
-        else if (userRole === 'company_owner') defaultRedirect = '/company';
+        if (userRole === 'recruiter' || userRole === 'company_owner' || authData?.user?.is_owner) {
+          defaultRedirect = '/recruiter';
+        } else if (userRole === 'admin') {
+          defaultRedirect = '/admin/dashboard';
+        }
 
         const redirectTo = searchParams.get('redirect') || defaultRedirect;
         navigate(redirectTo);
