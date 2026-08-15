@@ -372,20 +372,20 @@ export function JobDetailsPage() {
       )}
 
       {/* Main Top Header Card */}
-      <Card className="p-6 md:p-8 border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <Card className="p-6 md:p-8 border border-slate-100 dark:border-slate-800 bg-white dark:bg-[#15161e] rounded-3xl shadow-sm flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
         {/* Left Info Box */}
-        <div className="flex items-start gap-4 min-w-0">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
           <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center font-black text-2xl shrink-0 border border-blue-100 dark:border-blue-800/50 shadow-inner">
             {initial}
           </div>
 
-          <div className="space-y-1 min-w-0">
+          <div className="space-y-1 min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-sm font-bold text-slate-700 dark:text-slate-300">
               <span className="truncate">{companyName}</span>
               <CheckCircle2 className="w-4 h-4 text-blue-500 fill-blue-500/15 shrink-0" />
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug truncate" title={job.title}>
+            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight leading-snug break-words">
               {job.title}
             </h1>
 

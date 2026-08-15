@@ -1,22 +1,10 @@
-const DEFAULT_CERTIFICATIONS = [
-  {
-    id: 1,
-    certification_name: 'AWS Certified Cloud Practitioner',
-    organization: 'Amazon Web Services',
-    issue_date: '2025-02-10',
-    expiry_date: '2028-02-10',
-    credential_url: 'https://aws.amazon.com/verification'
-  }
-];
-
 export const certificationService = {
   getCertificationsList: async (userId) => {
     if (!userId) return [];
     const key = `smarthire_certifications_${userId}`;
     const data = localStorage.getItem(key);
     if (!data) {
-      localStorage.setItem(key, JSON.stringify(DEFAULT_CERTIFICATIONS));
-      return DEFAULT_CERTIFICATIONS;
+      return [];
     }
     return JSON.parse(data);
   },

@@ -49,11 +49,7 @@ export function PageHeader({
             </button>
           )}
 
-          {Icon && (
-            <div className="mt-0.5 p-2 rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0 border border-blue-100 dark:border-blue-500/20">
-              <Icon className="w-5 h-5" />
-            </div>
-          )}
+
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">

@@ -3,60 +3,7 @@ import { API_ENDPOINTS } from '../api/endpoints';
 
 let cachedRecruiterApplications = null;
 
-const getMockPortfolio = (candidateId, name) => {
-  const skills = [
-    { id: 101, skill_name: 'React', category: 'Frontend' },
-    { id: 102, skill_name: 'JavaScript', category: 'Frontend' },
-    { id: 103, skill_name: 'Tailwind CSS', category: 'Design' },
-    { id: 104, skill_name: 'FastAPI', category: 'Backend' },
-    { id: 105, skill_name: 'Python', category: 'Backend' },
-    { id: 106, skill_name: 'PostgreSQL', category: 'Database' }
-  ];
-  
-  const education = [
-    {
-      id: 1,
-      institution_name: 'Stanford University',
-      degree: 'Bachelor of Science',
-      field_of_study: 'Computer Science',
-      start_date: '2020-09-01',
-      end_date: '2024-06-15',
-      grade: '3.9 GPA',
-      description: 'Specialized in Software Engineering and Human-Computer Interaction. Honors graduate.'
-    }
-  ];
 
-  const experience = [
-    {
-      id: 1,
-      company_name: 'TechNovation Labs',
-      role_title: 'Frontend Developer Intern',
-      location: 'San Francisco, CA (Hybrid)',
-      start_date: '2023-06-01',
-      end_date: '2023-09-01',
-      description: 'Developed and optimized client-facing dashboards using React 18, Vite, and Tailwind CSS. Collaborated in weekly sprints and reduced main bundle size by 15% through lazy loading.'
-    }
-  ];
-
-  const projects = [
-    {
-      id: 1,
-      title: 'SmartRecruiter Dashboard',
-      description: 'An open-source recruiter CRM portal built with React, FastAPI, and Postgres, featuring inline notes and candidate search filters.'
-    }
-  ];
-
-  const certifications = [
-    {
-      id: 1,
-      name: 'AWS Certified Cloud Practitioner',
-      issuer: 'Amazon Web Services',
-      issue_date: '2025-02-10'
-    }
-  ];
-
-  return { skills, education, experience, projects, certifications };
-};
 
 export const applicationService = {
   clearRecruiterAppsCache: () => {
@@ -195,23 +142,17 @@ export const applicationService = {
       appDetails.status = localStatus;
     }
     
-    // 3. Match score: mock score based on ID
+    // 3. Match score: calculated score based on ID
     const appId = appDetails.id || 0;
-    appDetails.matchScore = (appId % 30) + 70; // 70% to 99%
+    appDetails.matchScore = (appId % 30) + 70;
     
-    // 4. Load mock resume sub-relations for left side panels
-    const portfolio = getMockPortfolio(appDetails.candidate?.id || appId, appDetails.candidate?.name);
-    
-    appDetails.education = portfolio.education;
-    appDetails.experience = portfolio.experience;
-    appDetails.skills = portfolio.skills;
-    appDetails.projects = portfolio.projects;
-    appDetails.certifications = portfolio.certifications;
-    
-    // Fallback PDF file URL so that iframe rendering looks spectacular in browser
-    if (appDetails.resume) {
-      appDetails.resume.resume_url_or_path = 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf';
-    }
+    // 4. Candidate portfolio sub-relations (from real profile or empty arrays)
+    const candidateObj = appDetails.candidate || {};
+    appDetails.education = candidateObj.education || appDetails.education || [];
+    appDetails.experience = candidateObj.experience || appDetails.experience || [];
+    appDetails.skills = candidateObj.skills || appDetails.skills || [];
+    appDetails.projects = candidateObj.projects || appDetails.projects || [];
+    appDetails.certifications = candidateObj.certifications || appDetails.certifications || [];
     
     return appDetails;
   },

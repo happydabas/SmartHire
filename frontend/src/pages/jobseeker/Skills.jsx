@@ -205,7 +205,7 @@ export function SkillsPage() {
 
       setSuccess(editingSkill ? "Skill details updated successfully!" : "Skill associated successfully!");
       setIsFormOpen(false);
-      await fetchSkillsList();
+      await fetchSkillsList(false);
     } catch (err) {
       console.error("Save skill error:", err);
       setError("Failed to save skill details. Please verify your connection.");
@@ -236,7 +236,7 @@ export function SkillsPage() {
 
       setSuccess("Skill removed from your profile.");
       setIsDeleteOpen(false);
-      await fetchSkillsList();
+      await fetchSkillsList(false);
     } catch (err) {
       console.error("Delete skill error:", err);
       setError("Failed to delete the skill association.");

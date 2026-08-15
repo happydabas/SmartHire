@@ -1,22 +1,10 @@
-const DEFAULT_PROJECTS = [
-  {
-    id: 1,
-    project_name: 'SmartRecruiter Dashboard',
-    description: 'An open-source recruiter CRM portal built with React, FastAPI, and Postgres, featuring inline notes and candidate search filters.',
-    technologies_used: ['React', 'FastAPI', 'PostgreSQL'],
-    github_link: 'https://github.com/example/smartrecruiter',
-    live_demo_link: 'https://smartrecruiter-demo.example.com'
-  }
-];
-
 export const projectService = {
   getProjectsList: async (userId) => {
     if (!userId) return [];
     const key = `smarthire_projects_${userId}`;
     const data = localStorage.getItem(key);
     if (!data) {
-      localStorage.setItem(key, JSON.stringify(DEFAULT_PROJECTS));
-      return DEFAULT_PROJECTS;
+      return [];
     }
     return JSON.parse(data);
   },

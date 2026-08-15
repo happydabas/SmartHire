@@ -16,7 +16,7 @@ const getCurrentUserId = () => {
 // Helper to retrieve notifications from local storage scoped by user ID
 const getLocalStorageNotifications = (userId = getCurrentUserId()) => {
   const key = `smarthire_notifications_${userId}`;
-  const data = localStorage.getItem(key);
+  const data = localStorage.getItem(key) || localStorage.getItem('smarthire_notifications_global');
   if (!data) {
     return [];
   }
@@ -29,8 +29,15 @@ const getLocalStorageNotifications = (userId = getCurrentUserId()) => {
 
 // Helper to save notifications to local storage scoped by user ID
 const saveLocalStorageNotifications = (notifications, userId = getCurrentUserId()) => {
-  const key = `smarthire_notifications_${userId}`;
-  localStorage.setItem(key, JSON.stringify(notifications));
+  const primaryKey = `smarthire_notifications_${userId}`;
+  localStorage.setItem(primaryKey, JSON.stringify(notifications));
+  
+  // Sync to active user key & fallback key for instant UI reactivity
+  const activeUser = getCurrentUserId();
+  if (activeUser && `smarthire_notifications_${activeUser}` !== primaryKey) {
+    localStorage.setItem(`smarthire_notifications_${activeUser}`, JSON.stringify(notifications));
+  }
+  localStorage.setItem('smarthire_notifications_global', JSON.stringify(notifications));
 };
 
 export const notificationService = {

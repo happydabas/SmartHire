@@ -32,28 +32,7 @@ import Spinner from '@/components/ui/Spinner';
 import EmptyState from '@/components/ui/EmptyState';
 import SkeletonCard from '@/components/common/SkeletonCard';
 
-const MOCK_RECOMMENDED_JOBS = [
-  {
-    id: 'mock-1',
-    title: 'Frontend Developer',
-    company: { name: 'Google' },
-    location: 'Bangalore, India',
-    job_type: 'Full-time',
-    salary: '₹ 8 - 12 LPA',
-    is_new: true,
-    match_score: 95
-  },
-  {
-    id: 'mock-2',
-    title: 'Product Designer',
-    company: { name: 'Notion Labs' },
-    location: 'Remote',
-    job_type: 'Full-time',
-    salary: '₹ 10 - 16 LPA',
-    is_new: true,
-    match_score: 90
-  }
-];
+
 
 export function Dashboard() {
   const navigate = useNavigate();
