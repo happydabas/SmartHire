@@ -88,11 +88,12 @@ def test_company_invitation_flow_and_acceptance(client: TestClient):
     assert inv_data["status"] == "pending"
     inv_token = inv_data["invitation_token"]
 
-    # 3. Duplicate invitation attempt should fail
+    # 3. Resending invitation refreshes token
     dup_res = client.post(f"/api/v1/companies/{company_id}/invitations", json={
         "recruiter_email": inv_email
     }, headers=headers)
-    assert dup_res.status_code == 400
+    assert dup_res.status_code == 201
+    inv_token = dup_res.json()["invitation_token"]
 
     # 4. Public token inspection
     detail_res = client.get(f"/api/v1/invitations/{inv_token}")

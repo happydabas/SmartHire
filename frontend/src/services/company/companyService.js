@@ -48,8 +48,10 @@ export const companyService = {
 
   // 7. Send recruiter invitation
   sendInvitation: async (companyId, recruiterEmail) => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined;
     const response = await api.post(`${API_ENDPOINTS.COMPANY.BASE}/${companyId}/invitations`, {
-      recruiter_email: recruiterEmail
+      recruiter_email: recruiterEmail,
+      frontend_url: origin
     });
     return response.data;
   },

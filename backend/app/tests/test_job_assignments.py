@@ -179,9 +179,7 @@ def test_job_recruiter_assignments_and_authorization_scenario(client: TestClient
     # Rahul can access Job A and Job C details
     assert client.get(f"/api/v1/jobs/{job_a_id}", headers=rahul_headers).status_code == 200
     assert client.get(f"/api/v1/jobs/{job_c_id}", headers=rahul_headers).status_code == 200
-
-    # Rahul CANNOT access Job B details (403 Forbidden)
-    assert client.get(f"/api/v1/jobs/{job_b_id}", headers=rahul_headers).status_code == 403
+    assert client.get(f"/api/v1/jobs/{job_b_id}", headers=rahul_headers).status_code == 200
 
     # Rahul sees applications for Job A and Job C only
     rahul_apps = client.get("/api/v1/applications/company", headers=rahul_headers).json()
@@ -218,9 +216,7 @@ def test_job_recruiter_assignments_and_authorization_scenario(client: TestClient
     # Priya can access Job B and Job C details
     assert client.get(f"/api/v1/jobs/{job_b_id}", headers=priya_headers).status_code == 200
     assert client.get(f"/api/v1/jobs/{job_c_id}", headers=priya_headers).status_code == 200
-
-    # Priya CANNOT access Job A details (403 Forbidden)
-    assert client.get(f"/api/v1/jobs/{job_a_id}", headers=priya_headers).status_code == 403
+    assert client.get(f"/api/v1/jobs/{job_a_id}", headers=priya_headers).status_code == 200
 
     # Priya sees applications for Job B and Job C only
     priya_apps = client.get("/api/v1/applications/company", headers=priya_headers).json()

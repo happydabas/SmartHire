@@ -125,12 +125,12 @@ async def create_job(
 
     is_authorized = bool(
         current_user.is_owner or 
-        current_user.role in [UserRole.COMPANY_OWNER, UserRole.RECRUITER]
+        current_user.role == UserRole.COMPANY_OWNER
     )
     if not is_authorized:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only authorized Recruiters and Company Owners can create job postings."
+            detail="Only Company Owners are authorized to post new job listings."
         )
         
     created_job = await job_service.create_job(

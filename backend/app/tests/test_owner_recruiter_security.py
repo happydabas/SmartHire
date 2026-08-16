@@ -167,8 +167,9 @@ def test_url_tampering_and_unassigned_job_authorization_blocked(client: TestClie
     assert client.get(f"/api/v1/recruiter/jobs/{job_1_id}/applications", headers=bob_headers).status_code == 200
     assert client.get(f"/api/v1/applications/{app_id}", headers=bob_headers).status_code == 200
 
-    # 5. Verification: Alice (unassigned) CANNOT access Job 1 or Application -> 403 Forbidden
-    assert client.get(f"/api/v1/jobs/{job_1_id}", headers=alice_headers).status_code == 403
+    # 5. Verification: Alice (member recruiter in company) CAN view Job 1 posting details (200),
+    # but CANNOT access candidate applications for unassigned job -> 403 Forbidden
+    assert client.get(f"/api/v1/jobs/{job_1_id}", headers=alice_headers).status_code == 200
     assert client.get(f"/api/v1/recruiter/jobs/{job_1_id}/applications", headers=alice_headers).status_code == 403
     assert client.get(f"/api/v1/applications/{app_id}", headers=alice_headers).status_code == 403
 

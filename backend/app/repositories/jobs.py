@@ -221,28 +221,34 @@ class JobRepository:
 
         if is_owner:
             stmt = select(Job).options(
+                selectinload(Job.company),
                 selectinload(Job.recruiter),
                 selectinload(Job.pipeline),
                 selectinload(Job.job_recruiter_assignments)
             ).where(
                 Job.company_id == company_id,
                 Job.is_deleted == False
-            )
+            ).order_by(Job.created_at.desc())
         else:
             stmt = (
                 select(Job)
                 .options(
+                    selectinload(Job.company),
                     selectinload(Job.recruiter),
                     selectinload(Job.pipeline),
                     selectinload(Job.job_recruiter_assignments)
                 )
-                .join(JobRecruiter, Job.id == JobRecruiter.job_id)
+                .outerjoin(JobRecruiter, Job.id == JobRecruiter.job_id)
                 .where(
                     Job.company_id == company_id,
-                    JobRecruiter.recruiter_id == user_id,
+                    or_(
+                        JobRecruiter.recruiter_id == user_id,
+                        Job.recruiter_id == user_id
+                    ),
                     Job.is_deleted == False
                 )
                 .distinct()
+                .order_by(Job.created_at.desc())
             )
         result = await db.execute(stmt)
         return list(result.scalars().all())

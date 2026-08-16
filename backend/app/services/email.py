@@ -40,10 +40,10 @@ class EmailService:
     @property
     def frontend_url(self) -> str:
         import os
-        env_url = os.getenv("FRONTEND_URL", "").strip()
-        if env_url and not ("localhost" in env_url or "127.0.0.1" in env_url):
+        env_url = os.getenv("FRONTEND_URL", "").strip() or settings.FRONTEND_URL
+        if env_url:
             return env_url.rstrip('/')
-        return "https://smarthire-jobs.netlify.app"
+        return "http://localhost:3000"
 
     def _send_sync(self, msg: EmailMessage) -> None:
         """Internal synchronous helper executed in a separate thread."""
@@ -101,13 +101,15 @@ class EmailService:
         company_name: str,
         owner_name: Optional[str],
         invitation_token: str,
-        expires_in_days: int = 7
+        expires_in_days: int = 7,
+        custom_frontend_url: Optional[str] = None
     ) -> None:
         """
         Construct and send a recruiter invitation email containing the CTA acceptance URL.
         Invitation URL format: {FRONTEND_URL}/invitations/accept/{token}
         """
-        accept_url = f"{self.frontend_url}/invitations/accept/{invitation_token}"
+        base_url = custom_frontend_url.rstrip('/') if custom_frontend_url else self.frontend_url
+        accept_url = f"{base_url}/invitations/accept/{invitation_token}"
         subject = f"You're invited to join {company_name} on SmartHire"
 
         inviter = owner_name if owner_name else "A team member"

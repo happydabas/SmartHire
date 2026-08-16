@@ -142,9 +142,6 @@ export const adminAnalyticsService = {
       console.warn('Admin API: exportReport failed. Using mock exporter.', error.message);
       adminAnalyticsService.useMock = true;
 
-      // Simulate a small loading latency for the downloader (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
       const csvContent = "data:text/csv;charset=utf-8," 
         + "Category,Total,Growth Rate\n"
         + `Users,${MOCK_ANALYTICS_DATA.summary.totalUsers},${MOCK_ANALYTICS_DATA.summary.usersChange}%\n`

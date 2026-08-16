@@ -154,19 +154,20 @@ class JobService:
             return job
 
         # Normal recruiter authorization check
-        if job.company_id != current_user.company_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to access jobs from another company."
-            )
+        if current_user.company_id and job.company_id == current_user.company_id:
+            return job
 
         is_assigned = await self.job_repo.is_recruiter_assigned(self.db, job_id=job.id, recruiter_id=current_user.id)
-        if not is_assigned:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to view or access this job posting."
-            )
-        return job
+        if is_assigned or job.recruiter_id == current_user.id:
+            return job
+
+        if job.status == JobStatus.OPEN and not job.is_deleted:
+            return job
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not authorized to view or access this job posting."
+        )
 
     async def update_job_assignments(self, job_id: int, recruiter_ids: List[int], current_user: User) -> List[int]:
         """
@@ -216,18 +217,18 @@ class JobService:
         """
         job = await self.get_job(job_id=job_id)
         
-        authorized = False
-        if current_user.role == UserRole.RECRUITER and job.recruiter_id == current_user.id:
-            authorized = True
-        elif current_user.role == UserRole.COMPANY_OWNER:
-            company = await self.company_repo.get_by_id(self.db, company_id=job.company_id)
-            if company and company.owner_id == current_user.id:
-                authorized = True
-                
-        if not authorized:
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        if not is_owner:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to edit this job posting."
+                detail="Only Company Owners are authorized to edit job postings."
+            )
+            
+        company = await self.company_repo.get_by_id(self.db, company_id=job.company_id)
+        if not company or company.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to edit jobs from another company."
             )
             
         # Delete existing JobRequiredSkill records explicitly to prevent UNIQUE constraint collisions
@@ -249,35 +250,26 @@ class JobService:
                     category="Technical"
                 )
                 
-            job_skill = JobRequiredSkill(
-                job_id=job.id,
-                skill_id=skill.id
-            )
+            job_skill = JobRequiredSkill(job_id=job.id, skill_id=skill.id)
             self.db.add(job_skill)
-            
-        if not job.pipeline:
-            pipeline = HiringPipeline(job_id=job.id)
-            self.db.add(pipeline)
-            await self.db.flush()
-            job.pipeline = pipeline
-        else:
-            # Delete existing stages explicitly to prevent constraint collisions
+
+        # Re-construct hiring pipeline stages if provided
+        if obj_in.hiring_pipeline and job.pipeline:
             await self.db.execute(
                 sa.delete(PipelineStage).where(PipelineStage.pipeline_id == job.pipeline.id)
             )
             await self.db.flush()
             
-        for idx, stage_name in enumerate(obj_in.hiring_pipeline):
-            clean_stage = stage_name.strip()
-            if not clean_stage:
-                continue
-                
-            stage = PipelineStage(
-                pipeline_id=job.pipeline.id,
-                stage_name=clean_stage,
-                stage_order=idx + 1
-            )
-            self.db.add(stage)
+            for idx, stage_name in enumerate(obj_in.hiring_pipeline):
+                clean_stage = stage_name.strip()
+                if not clean_stage:
+                    continue
+                stage = PipelineStage(
+                    pipeline_id=job.pipeline.id,
+                    stage_name=clean_stage,
+                    stage_order=idx + 1
+                )
+                self.db.add(stage)
 
         if getattr(obj_in, "recruiter_ids", None) is not None and (current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER):
             await self.update_job_assignments(job.id, obj_in.recruiter_ids, current_user)
@@ -300,18 +292,18 @@ class JobService:
         """
         job = await self.get_job(job_id=job_id)
         
-        authorized = False
-        if current_user.role == UserRole.RECRUITER and job.recruiter_id == current_user.id:
-            authorized = True
-        elif current_user.role == UserRole.COMPANY_OWNER:
-            company = await self.company_repo.get_by_id(self.db, company_id=job.company_id)
-            if company and company.owner_id == current_user.id:
-                authorized = True
-                
-        if not authorized:
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        if not is_owner:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You are not authorized to delete this job posting."
+                detail="Only Company Owners are authorized to delete job postings."
+            )
+            
+        company = await self.company_repo.get_by_id(self.db, company_id=job.company_id)
+        if not company or company.owner_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You do not have permission to delete jobs from another company."
             )
             
         return await self.job_repo.soft_delete(self.db, db_obj=job)
@@ -582,15 +574,27 @@ class JobService:
 
     async def get_recruiter_jobs(self, current_user: User) -> List[Job]:
         """
-        Retrieve all active jobs posted by the logged-in Recruiter/Owner user.
+        Retrieve all active jobs for the logged-in Recruiter/Owner user.
+        - Company Owner: returns all company job listings.
+        - Member Recruiter: returns jobs assigned to them in job_recruiters.
         """
         if current_user.role not in [UserRole.RECRUITER, UserRole.COMPANY_OWNER]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only Company Owners and Recruiters can view their posted jobs."
+                detail="Only Company Owners and Recruiters can view their jobs."
             )
             
-        return await self.job_repo.get_recruiter_jobs(self.db, recruiter_id=current_user.id)
+        company_id = await self.get_user_company_id(current_user)
+        if not company_id:
+            return []
+
+        is_owner = bool(current_user.is_owner or current_user.role == UserRole.COMPANY_OWNER)
+        return await self.job_repo.get_company_jobs_for_user(
+            self.db,
+            company_id=company_id,
+            user_id=current_user.id,
+            is_owner=is_owner
+        )
 
     async def search_jobs(self, query_str: str) -> List[Job]:
         """

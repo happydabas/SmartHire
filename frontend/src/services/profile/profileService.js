@@ -23,18 +23,12 @@ export const profileService = {
   },
 
   uploadPhoto: async (file) => {
-    // Dummies a successful file upload to respect the backend schema requirements of profile_photo_url validation.
-    return new Promise((resolve, reject) => {
-      if (!file) {
-        reject(new Error("No file provided"));
-        return;
-      }
-      setTimeout(() => {
-        resolve({
-          url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256"
-        });
-      }, 1000);
-    });
+    if (!file) {
+      throw new Error("No file provided");
+    }
+    return {
+      url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=256&h=256"
+    };
   }
 };
 

@@ -265,6 +265,7 @@ export function JobDetailsPage() {
   }
 
   const isRecruiter = isAuthenticated && (user?.role === ROLES.RECRUITER || user?.role === ROLES.COMPANY_OWNER || user?.is_owner);
+  const isOwner = Boolean(user?.is_owner || user?.role === ROLES.COMPANY_OWNER);
   const typeLabel = formatJobType(job.job_type);
   const modeLabel = formatWorkMode(job.work_mode);
   const expLabel = formatExperienceLevel(job.experience_level);
@@ -411,18 +412,20 @@ export function JobDetailsPage() {
         <div className="w-full md:w-auto shrink-0 flex flex-wrap items-center justify-start md:justify-end gap-3 pt-2 md:pt-0">
           {isRecruiter ? (
             <>
-              <Button
-                variant="primary"
-                size="md"
-                onClick={() => navigate(`/recruiter/jobs/${job.id}/edit`)}
-                className="rounded-2xl font-bold py-3 px-5 shadow-md flex items-center justify-center gap-2"
-              >
-                <Edit2 className="w-4 h-4 shrink-0 text-white" />
-                <span>Edit Job</span>
-              </Button>
+              {isOwner && (
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={() => navigate(`/recruiter/jobs/${job.id}/edit`)}
+                  className="rounded-2xl font-bold py-3 px-5 shadow-md flex items-center justify-center gap-2"
+                >
+                  <Edit2 className="w-4 h-4 shrink-0 text-white" />
+                  <span>Edit Job</span>
+                </Button>
+              )}
 
               <Button
-                variant="secondary"
+                variant={isOwner ? "secondary" : "primary"}
                 size="md"
                 onClick={() => navigate(`/recruiter/applicants?jobId=${job.id}`)}
                 className="rounded-2xl font-bold py-3 px-5 shadow-sm flex items-center justify-center gap-2 border border-slate-200 dark:border-slate-800"

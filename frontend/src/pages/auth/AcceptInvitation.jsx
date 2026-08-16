@@ -38,7 +38,8 @@ export function AcceptInvitation() {
 
   useEffect(() => {
     const loadDetails = async () => {
-      if (!token) {
+      const cleanToken = token ? token.trim() : '';
+      if (!cleanToken) {
         setFetchError('Invalid invitation link URL');
         setInitLoading(false);
         return;
@@ -46,7 +47,7 @@ export function AcceptInvitation() {
 
       try {
         setInitLoading(true);
-        const data = await companyService.getInvitationDetails(token);
+        const data = await companyService.getInvitationDetails(cleanToken);
         setInvitation(data);
       } catch (err) {
         console.error('Failed to load invitation details:', err);
@@ -89,8 +90,9 @@ export function AcceptInvitation() {
 
     try {
       setSubmitLoading(true);
+      const cleanToken = token ? token.trim() : '';
       const res = await companyService.acceptInvitation({
-        token,
+        token: cleanToken,
         name: invitation?.existing_user ? undefined : name.trim(),
         password
       });

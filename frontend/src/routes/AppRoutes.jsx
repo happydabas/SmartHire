@@ -63,9 +63,11 @@ function AppRoutes() {
   return (
     <Suspense fallback={<FullPageLoader />}>
       <Routes>
-        {/* 1. Public Routes mapped inside MainLayout */}
+        {/* 1. Public & Shared Routes mapped inside MainLayout */}
         <Route element={<MainLayout />}>
           <Route path={ROUTES.HOME} element={<Home />} />
+          <Route path={ROUTES.JOBS} element={<Jobs />} />
+          <Route path="/jobs/:id" element={<JobDetails />} />
         </Route>
 
         {/* 2. Public Auth Routes (Redirects to dashboard if already logged in) */}
@@ -102,9 +104,6 @@ function AppRoutes() {
             <Route path={ROUTES.PROFILE} element={<Profile />} />
             <Route path={ROUTES.RESUME} element={<Resume />} />
             <Route path={ROUTES.AI_INSIGHTS} element={<AIInsights />} />
-
-            <Route path={ROUTES.JOBS} element={<Jobs />} />
-            <Route path="/jobs/:id" element={<JobDetails />} />
             <Route path={ROUTES.SAVED_JOBS} element={<SavedJobs />} />
             <Route path={ROUTES.APPLICATIONS} element={<Applications />} />
             <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />

@@ -8,6 +8,7 @@ from app.models.company_invitations import InvitationStatus
 class InvitationCreate(BaseSchema):
     """Schema to validate email address during recruiter invitations creation."""
     recruiter_email: EmailStr = Field(..., description="Email address of the recruiter to invite")
+    frontend_url: Optional[str] = Field(None, description="Current client frontend origin (e.g. window.location.origin)")
 
 
 class InvitationResponse(BaseSchema):

@@ -358,8 +358,27 @@ export function CreateJob() {
     );
   }
 
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+
+  if (!isOwner) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="p-4 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full inline-flex border border-amber-200 dark:border-amber-900/50">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Company Owner Access Required</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Only the Company Owner is authorized to create new job postings. Once created, the owner can assign jobs to your recruiter account.
+        </p>
+        <Button variant="primary" onClick={() => navigate('/recruiter/jobs')} className="rounded-xl mt-4">
+          View Assigned Jobs
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+    <div className="max-w-6xl mx-auto space-y-8 pb-16 animate-fadeIn">
       {/* Toast popup */}
       {toastMessage && (
         <Toast

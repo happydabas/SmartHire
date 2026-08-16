@@ -34,7 +34,8 @@ class CompanyInvitationService:
         self, 
         company_id: int, 
         recruiter_email: str, 
-        owner_id: int
+        owner_id: int,
+        frontend_url: Optional[str] = None
     ) -> CompanyInvitation:
         """
         Create a new recruiter invitation.
@@ -70,7 +71,7 @@ class CompanyInvitationService:
                 detail="This recruiter is already a member of your company."
             )
 
-        # 4. If an existing invitation is present for this email and company (pending/cancelled/expired), refresh its token back to PENDING
+        # 4. Refresh token if previous invitation exists (pending, cancelled, or expired) or create new record
         existing_invitation = await self.invitation_repo.get_latest_by_email_and_company(
             self.db, 
             email=recruiter_email, 
@@ -78,9 +79,9 @@ class CompanyInvitationService:
         )
 
         expires_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=7)
+        token = secrets.token_urlsafe(32)
 
-        if existing_invitation and existing_invitation.invitation_token:
-            token = existing_invitation.invitation_token
+        if existing_invitation:
             invitation = await self.invitation_repo.update_token(
                 self.db,
                 db_obj=existing_invitation,
@@ -88,7 +89,6 @@ class CompanyInvitationService:
                 expires_at=expires_at
             )
         else:
-            token = secrets.token_urlsafe(32)
             invitation = await self.invitation_repo.create(
                 self.db,
                 company_id=company_id,
@@ -108,7 +108,8 @@ class CompanyInvitationService:
                 company_name=company.name,
                 owner_name=owner_name,
                 invitation_token=token,
-                expires_in_days=7
+                expires_in_days=7,
+                custom_frontend_url=frontend_url
             )
         except Exception as exc:
             import logging
@@ -186,6 +187,7 @@ class CompanyInvitationService:
         """
         Public token inspection. Returns company name, recipient email, expiration, and user existence.
         """
+        token = (token or "").strip()
         invitation = await self.invitation_repo.get_by_token(self.db, token=token)
         if not invitation:
             raise HTTPException(
@@ -228,6 +230,7 @@ class CompanyInvitationService:
         - Updates invitation status to ACCEPTED.
         - Returns authentication JWT tokens and user payload.
         """
+        token = (token or "").strip()
         # 1. Load invitation record
         invitation = await self.invitation_repo.get_by_token(self.db, token=token)
         if not invitation:

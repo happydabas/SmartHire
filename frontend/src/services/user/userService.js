@@ -32,36 +32,32 @@ export const userService = {
   },
 
   updateProfile: async (profileData) => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const localUser = storage.getItem(STORAGE_KEYS.USER) || {};
-        const userId = localUser.id || 999;
+    const localUser = storage.getItem(STORAGE_KEYS.USER) || {};
+    const userId = localUser.id || 999;
 
-        // Save overrides locally
-        const overrides = storage.getItem(`profile_override_${userId}`) || {};
-        const updatedOverrides = {
-          ...overrides,
-          name: profileData.name,
-          phone: profileData.phone,
-          profile_image: profileData.profile_image,
-        };
-        storage.setItem(`profile_override_${userId}`, updatedOverrides);
+    // Save overrides locally
+    const overrides = storage.getItem(`profile_override_${userId}`) || {};
+    const updatedOverrides = {
+      ...overrides,
+      name: profileData.name,
+      phone: profileData.phone,
+      profile_image: profileData.profile_image,
+    };
+    storage.setItem(`profile_override_${userId}`, updatedOverrides);
 
-        // Update the main cached user object in Auth State
-        const updatedUser = {
-          ...localUser,
-          name: profileData.name,
-          phone: profileData.phone,
-          profile_image: profileData.profile_image
-        };
-        storage.setItem(STORAGE_KEYS.USER, updatedUser);
+    // Update the main cached user object in Auth State
+    const updatedUser = {
+      ...localUser,
+      name: profileData.name,
+      phone: profileData.phone,
+      profile_image: profileData.profile_image
+    };
+    storage.setItem(STORAGE_KEYS.USER, updatedUser);
 
-        // Dispatch a custom storage/auth event so other components sync
-        window.dispatchEvent(new Event('storage'));
+    // Dispatch a custom storage/auth event so other components sync
+    window.dispatchEvent(new Event('storage'));
 
-        resolve(updatedUser);
-      }, 500);
-    });
+    return updatedUser;
   },
 
   uploadAvatar: async (file) => {

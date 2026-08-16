@@ -19,5 +19,20 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('echarts')) return 'echarts';
+            if (id.includes('recharts')) return 'recharts';
+            if (id.includes('lucide-react')) return 'icons';
+            if (id.includes('@tanstack') || id.includes('axios')) return 'vendor-data';
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) return 'vendor-react';
+          }
+        }
+      }
+    }
   }
 })

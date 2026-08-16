@@ -435,8 +435,8 @@ export function ManageJobs() {
       });
     }
 
-    // 2. Edit Action (Draft or Active status)
-    if (status === 'draft' || status === 'open') {
+    // 2. Edit Action (Company Owner only, Draft or Active status)
+    if (isOwner && (status === 'draft' || status === 'open')) {
       actions.push({
         label: 'Edit Job',
         icon: Edit2,
@@ -444,8 +444,8 @@ export function ManageJobs() {
       });
     }
 
-    // 3. Publish Action (Draft status only)
-    if (status === 'draft') {
+    // 3. Publish Action (Company Owner only, Draft status)
+    if (isOwner && status === 'draft') {
       actions.push({
         label: 'Publish Job',
         icon: CheckCircle2,
@@ -453,8 +453,8 @@ export function ManageJobs() {
       });
     }
 
-    // 4. Close Action (Active/Open status only)
-    if (status === 'open') {
+    // 4. Close Action (Company Owner only, Active/Open status)
+    if (isOwner && status === 'open') {
       actions.push({
         label: 'Close Job',
         icon: XCircle,
@@ -462,8 +462,8 @@ export function ManageJobs() {
       });
     }
 
-    // 5. Reopen Action (Closed status only)
-    if (status === 'closed') {
+    // 5. Reopen Action (Company Owner only, Closed status)
+    if (isOwner && status === 'closed') {
       actions.push({
         label: 'Reopen Job',
         icon: Play,
@@ -471,20 +471,24 @@ export function ManageJobs() {
       });
     }
 
-    // 6. Duplicate Action (all statuses)
-    actions.push({
-      label: 'Duplicate Job',
-      icon: Copy,
-      onClick: () => handleDuplicateJob(job.id)
-    });
+    // 6. Duplicate Action (Company Owner only)
+    if (isOwner) {
+      actions.push({
+        label: 'Duplicate Job',
+        icon: Copy,
+        onClick: () => handleDuplicateJob(job.id)
+      });
+    }
 
-    // 7. Delete Action (all statuses)
-    actions.push({
-      label: 'Delete Posting',
-      icon: Trash2,
-      variant: 'danger',
-      onClick: () => handleDeleteJob(job.id)
-    });
+    // 7. Delete Action (Company Owner only)
+    if (isOwner) {
+      actions.push({
+        label: 'Delete Posting',
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => handleDeleteJob(job.id)
+      });
+    }
 
     return actions;
   };
@@ -581,8 +585,8 @@ export function ManageJobs() {
               <Eye className="w-4 h-4" />
             </button>
 
-            {/* Edit - Quick access if Draft or Active */}
-            {(status === 'draft' || status === 'open') && (
+            {/* Edit - Quick access if Draft or Active (Company Owner only) */}
+            {isOwner && (status === 'draft' || status === 'open') && (
               <button
                 disabled={actionPending}
                 onClick={() => navigate(`/recruiter/jobs/${row.id}/edit`)}
@@ -593,8 +597,8 @@ export function ManageJobs() {
               </button>
             )}
 
-            {/* Close - Quick access if Active */}
-            {status === 'open' && (
+            {/* Close - Quick access if Active (Company Owner only) */}
+            {isOwner && status === 'open' && (
               <button
                 disabled={actionPending}
                 onClick={() => handleCloseJob(row.id)}
@@ -605,8 +609,8 @@ export function ManageJobs() {
               </button>
             )}
 
-            {/* Reopen - Quick access if Closed */}
-            {status === 'closed' && (
+            {/* Reopen - Quick access if Closed (Company Owner only) */}
+            {isOwner && status === 'closed' && (
               <button
                 disabled={actionPending}
                 onClick={() => handleReopenJob(row.id)}
@@ -972,7 +976,7 @@ export function ManageJobs() {
                             <Eye className="w-3.5 h-3.5 mr-1" /> View Listing
                           </Button>
 
-                          {(status === 'draft' || status === 'open') && (
+                          {isOwner && (status === 'draft' || status === 'open') && (
                             <Button
                               variant="primary"
                               size="sm"

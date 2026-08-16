@@ -13,6 +13,7 @@ import Badge from '@/components/ui/Badge';
 import EmptyState from '@/components/common/EmptyState';
 import PageHeader from '@/components/ui/PageHeader';
 import { formatDate } from '@/utils/formatDate';
+import { extractErrorMessage } from '@/utils/errorParser';
 
 export function RecruiterManagement() {
   const { user } = useAuth();
@@ -115,25 +116,27 @@ export function RecruiterManagement() {
       triggerToast('Recruiter invitation generated! Click "Copy Link" to share the invitation link directly.', 'success');
     } catch (err) {
       console.error('Send invitation error:', err);
-      const detail = err.response?.data?.detail || err.message;
+      const detail = extractErrorMessage(err) || 'Failed to send invitation.';
       setInviteError(detail);
-      triggerToast(detail || 'Failed to send invitation.', 'error');
+      triggerToast(detail, 'error');
     } finally {
       setInviteLoading(false);
     }
   };
 
   const handleCancelInvitation = async (invitationId) => {
-    // Optimistically update local state for instant responsive UI
-    setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
-    triggerToast('Invitation cancelled successfully.', 'success');
+    if (!companyId || !invitationId) return;
 
-    if (companyId && invitationId) {
-      try {
-        await companyService.cancelInvitation(companyId, invitationId);
-      } catch (err) {
-        console.warn('Background cancel invitation notification:', err);
-      }
+    try {
+      await companyService.cancelInvitation(companyId, invitationId);
+      setInvitations(prev => prev.map(inv => inv.id === invitationId ? { ...inv, status: 'cancelled' } : inv));
+      setLastCreatedInv(null);
+      triggerToast('Invitation cancelled successfully.', 'success');
+      await fetchData();
+    } catch (err) {
+      console.error('Cancel invitation error:', err);
+      const detail = extractErrorMessage(err) || 'Failed to cancel invitation.';
+      triggerToast(detail, 'error');
     }
   };
 
@@ -148,8 +151,8 @@ export function RecruiterManagement() {
       triggerToast(`${recruiterName} removed from company.`, 'success');
     } catch (err) {
       console.error(err);
-      const detail = err.response?.data?.error?.message || err.response?.data?.detail || err.message;
-      triggerToast(detail || 'Failed to remove recruiter.', 'error');
+      const detail = extractErrorMessage(err) || 'Failed to remove recruiter.';
+      triggerToast(detail, 'error');
     }
   };
 

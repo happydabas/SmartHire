@@ -12,32 +12,31 @@ export const AuthProvider = ({ children }) => {
 
   // Initialize auth state from local storage on mount
   useEffect(() => {
-    const initAuth = async () => {
+    const initAuth = () => {
       const storedUser = storage.getItem(STORAGE_KEYS.USER);
       const storedToken = storage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
       
       if (storedUser && storedToken) {
         setAccessToken(storedToken);
+        setUser(storedUser);
         setIsAuthenticated(true);
+        setIsLoading(false);
 
-        // Refresh user profile from backend to sync is_owner, company_id, etc.
-        try {
-          const { default: api } = await import('@/services/api/axios');
-          // Use nocache to bypass client-side response cache for fresh user data
-          const res = await api.get('/auth/me', { params: { nocache: true } });
-          const freshUser = res.data;
-          if (freshUser && freshUser.id) {
-            storage.setItem(STORAGE_KEYS.USER, freshUser);
-            setUser(freshUser);
-          } else {
-            setUser(storedUser);
-          }
-        } catch (err) {
-          // Fallback to stored user if /auth/me fails (e.g. token expired)
-          setUser(storedUser);
-        }
+        // Refresh user profile in background without blocking initial UI render
+        import('@/services/api/axios').then(({ default: api }) => {
+          api.get('/auth/me', { params: { nocache: true } })
+            .then((res) => {
+              const freshUser = res.data;
+              if (freshUser && freshUser.id) {
+                storage.setItem(STORAGE_KEYS.USER, freshUser);
+                setUser(freshUser);
+              }
+            })
+            .catch(() => {});
+        });
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     initAuth();

@@ -241,7 +241,8 @@ async def create_invitation(
     return await invitation_service.create_invitation(
         company_id=company_id,
         recruiter_email=payload.recruiter_email,
-        owner_id=current_user.id
+        owner_id=current_user.id,
+        frontend_url=payload.frontend_url
     )
 
 @router.get(

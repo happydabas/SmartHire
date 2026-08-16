@@ -354,6 +354,25 @@ export function EditJob() {
     );
   }
 
+  const isOwner = Boolean(user?.is_owner || user?.role === 'company_owner');
+
+  if (!isOwner) {
+    return (
+      <div className="max-w-4xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="p-4 bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 rounded-full inline-flex border border-amber-200 dark:border-amber-900/50">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Company Owner Access Required</h2>
+        <p className="text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
+          Only the Company Owner is authorized to edit job postings. As an assigned recruiter, you can review candidates and manage applicants for this job.
+        </p>
+        <Button variant="primary" onClick={() => navigate('/recruiter/jobs')} className="rounded-xl mt-4">
+          Return to Manage Jobs
+        </Button>
+      </div>
+    );
+  }
+
   const isDraftStatus = formFields.status?.toLowerCase() === 'draft';
 
   return (
