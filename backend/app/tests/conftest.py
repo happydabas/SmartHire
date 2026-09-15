@@ -28,6 +28,14 @@ TestingSessionLocal = async_sessionmaker(
 )
 
 @pytest.fixture(scope="session", autouse=True)
+def mock_email_sending():
+    """Globally mock email sending so tests never send actual emails via SMTP."""
+    from unittest.mock import patch, AsyncMock
+    with patch("app.services.email.EmailService.send_email", new_callable=AsyncMock) as mocked:
+        yield mocked
+
+
+@pytest.fixture(scope="session", autouse=True)
 def create_test_db():
     """Build schemas prior to starting test instances."""
     import asyncio

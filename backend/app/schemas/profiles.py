@@ -22,7 +22,7 @@ class ProfileBase(BaseSchema):
     github_url: Optional[str] = Field(None, max_length=255, description="GitHub profile URL")
     portfolio_url: Optional[str] = Field(None, max_length=255, description="Portfolio URL")
     professional_summary: Optional[str] = Field(None, description="Professional summary overview")
-    profile_photo_url: Optional[str] = Field(None, max_length=255, description="Profile picture photo URL")
+    profile_photo_url: Optional[str] = Field(None, description="Profile picture photo URL or Base64 string")
 
     @field_validator("phone_number")
     @classmethod
@@ -33,7 +33,7 @@ class ProfileBase(BaseSchema):
             raise ValueError("Phone number must contain between 7 to 20 digits and can only include '+', '-', or spaces.")
         return clean_v
 
-    @field_validator("linkedin_url", "github_url", "portfolio_url", "profile_photo_url")
+    @field_validator("linkedin_url", "github_url", "portfolio_url")
     @classmethod
     def validate_url_fields(cls, v: Optional[str]) -> Optional[str]:
         """Verify HTTP/HTTPS protocol urls if provided."""
@@ -42,6 +42,17 @@ class ProfileBase(BaseSchema):
             if not (url_str.startswith("http://") or url_str.startswith("https://")):
                 raise ValueError("Must be a valid HTTP or HTTPS URL")
             return url_str
+        return None
+
+    @field_validator("profile_photo_url")
+    @classmethod
+    def validate_profile_photo(cls, v: Optional[str]) -> Optional[str]:
+        """Verify profile photo is a valid URL or Base64 image data URI."""
+        if v and v.strip():
+            photo_str = v.strip()
+            if photo_str.startswith("http://") or photo_str.startswith("https://") or photo_str.startswith("data:image/"):
+                return photo_str
+            raise ValueError("Profile photo must be a valid HTTP/HTTPS URL or Base64 image data URI")
         return None
 
 

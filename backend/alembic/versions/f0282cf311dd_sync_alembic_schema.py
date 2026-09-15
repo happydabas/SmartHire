@@ -24,12 +24,14 @@ def upgrade() -> None:
     op.execute("DROP TABLE IF EXISTS ai_insights_history CASCADE;")
     op.execute("DROP TABLE IF EXISTS ai_match_scores CASCADE;")
     op.alter_column('companies', 'logo_url',
-               existing_type=sa.TEXT(),
+               existing_type=sa.VARCHAR(255),
+               type_=sa.TEXT(),
                comment='URL pointing to the stored logo image file or Base64 string',
                existing_comment='URL pointing to the stored logo image file',
                existing_nullable=True)
     op.alter_column('job_seeker_profiles', 'profile_photo_url',
-               existing_type=sa.TEXT(),
+               existing_type=sa.VARCHAR(255),
+               type_=sa.TEXT(),
                comment='Profile picture URL or Base64 string',
                existing_comment='Profile picture URL',
                existing_nullable=True)
